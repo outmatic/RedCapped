@@ -12,12 +12,8 @@ namespace RedCapped.Core
         [BsonElement("_type")]
         public string Type
         {
-            get { return typeof(T).ToString(); }
-            set { value = typeof(T).ToString(); }
+            get { return typeof(T).FullName; }
         }
-
-        [BsonElement("topic")]
-        public string Topic { get; set; }
 
         [BsonElement("sent")]
         public DateTime SentAt { get; set; }
@@ -43,6 +39,9 @@ namespace RedCapped.Core
 
         [BsonElement("header")]
         public MessageHeader<T> Header { get; set; }
+
+        [BsonElement("topic")]
+        public string Topic { get; set; }
 
         [BsonElement("payload")]
         public T Message { get; set; }

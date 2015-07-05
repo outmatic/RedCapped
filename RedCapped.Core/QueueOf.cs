@@ -29,7 +29,7 @@ namespace RedCapped.Core
             await _collection.Indexes.CreateOneAsync(Builders<RedCappedMessage<T>>.IndexKeys
                 .Ascending(x => x.Header.Type)
                 .Ascending(x => x.Header.AcknowledgedAt)
-                .Ascending(x => x.Header.Topic), options);
+                .Ascending(x => x.Topic), options);
         }
 
         private async Task<bool> AckAsync(string messageId)
@@ -62,7 +62,7 @@ namespace RedCapped.Core
                     using (
                         var cursor =
                             await
-                                _collection.FindAsync(x => x.Header.Type == typeof(T).ToString() & x.Header.AcknowledgedAt == DateTime.MinValue & x.Header.Topic == topic, findOptions, cancellationToken.Token)
+                                _collection.FindAsync(x => x.Header.Type == typeof(T).ToString() & x.Header.AcknowledgedAt == DateTime.MinValue & x.Topic == topic, findOptions, cancellationToken.Token)
                         )
                     {
                         await cursor.ForEachAsync(async item =>
@@ -71,7 +71,7 @@ namespace RedCapped.Core
                             {
                                 if (!handler(item.Message) && item.Header.RetryCount < 5)
                                 {
-                                    await PublishAsync(item.Header.Topic, item.Message);
+                                    await PublishAsync(item.Topic, item.Message);
                                 }
                             }
                         }, cancellationToken.Token);
@@ -101,8 +101,8 @@ namespace RedCapped.Core
                 Header = new MessageHeader<T>
                 {
                     SentAt = DateTime.Now,
-                    Topic = topic
-                }
+                },
+                Topic = topic
             };
 
             await _collection.InsertOneAsync(msg);
