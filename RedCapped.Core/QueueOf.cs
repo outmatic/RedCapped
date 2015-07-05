@@ -17,9 +17,10 @@ namespace RedCapped.Core
         {
             _collection = collection;
             _cancellationTokenList = new ConcurrentDictionary<string, CancellationTokenSource>();
+            //CreateIndex();
         }
 
-        internal async void CreateIndex()
+        private async void CreateIndex()
         {
             var options = new CreateIndexOptions
             {
