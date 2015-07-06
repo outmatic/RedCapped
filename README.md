@@ -5,6 +5,7 @@ a .NET message queue system built on top of MongoDb.
 ## How to publish messages
 
 ```csharp
+// the payload of your message
 public class Order
 {
   public int Id { get; set; }
