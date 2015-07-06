@@ -10,6 +10,7 @@ namespace RedCapped.Core
     public class MongoContext : IMongoContext
     {
         private const string Prefix = "red";
+        private const int CollectionMaxSize = 4096;
         private readonly Lazy<IMongoClient> _client;
         private readonly Lazy<IMongoDatabase> _database;
         private readonly CancellationToken _cancellationToken;
@@ -50,7 +51,7 @@ namespace RedCapped.Core
             {
                 Capped = true,
                 AutoIndexId = true,
-                MaxSize = maxSize
+                MaxSize = maxSize > CollectionMaxSize ? maxSize : CollectionMaxSize
             };
 
             await _database.Value.CreateCollectionAsync(CollectionFullName(collectionName), opt, _cancellationToken);

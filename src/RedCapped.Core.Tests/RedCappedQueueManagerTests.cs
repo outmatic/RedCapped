@@ -28,7 +28,7 @@ namespace RedCapped.Core.Tests
         public async void RedCappedQueueManager_Can_get_existent_queue()
         {
             // GIVEN
-            var expected = typeof(QueueOf<string>);
+            var expected = typeof(IQueueOf<string>);
 
             _sut = new FakeRedCappedQueueManager(_mongoContext);
 
@@ -59,7 +59,7 @@ namespace RedCapped.Core.Tests
         public async void RedCappedQueueManager_Can_create_queue()
         {
             // GIVEN
-            var expected = typeof(QueueOf<string>);
+            var expected = typeof(IQueueOf<string>);
 
             _mongoContext.CollectionExistsAsync("anyqueue")
                 .Returns(Task.FromResult(false));
@@ -78,7 +78,7 @@ namespace RedCapped.Core.Tests
         public async void RedCappedQueueManager_Create_an_existing_queue_returns_existing_queue()
         {
             // GIVEN
-            var expected = typeof(QueueOf<string>);
+            var expected = typeof(IQueueOf<string>);
 
             _mongoContext.CollectionExistsAsync("anyqueue")
                 .Returns(Task.FromResult(true));
