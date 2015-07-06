@@ -38,7 +38,6 @@ var queue = await manager.CreateQueue<Order>(queueName, 256*1024*1024);
 queue.SubscribeAsync("new-orders", order =>
 {
   Debug.WriteLine("Order #{0} amount {1}", order.Id, order.Amount);
-
   // if the message was handled, otherwise it will be requeued
   return true;
 });
