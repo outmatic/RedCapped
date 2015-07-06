@@ -2,6 +2,7 @@
 using MongoDB.Driver;
 using NSubstitute;
 using NUnit.Framework;
+using RedCapped.Core.Tests.Extensions;
 
 namespace RedCapped.Core.Tests
 {
@@ -69,7 +70,7 @@ namespace RedCapped.Core.Tests
             var actual = await _sut.CreateQueueAsync<string>("anyqueue", 1000);
 
             // THEN
-            _mongoContext.Received(1).CollectionExistsAsync("anyqueue");
+            _mongoContext.Received(1).CollectionExistsAsync("anyqueue").IgnoreAwaitForNSubstituteAssertion();
             Assert.That(actual, Is.InstanceOf(expected));
         }
 
@@ -88,7 +89,7 @@ namespace RedCapped.Core.Tests
             var actual = await _sut.CreateQueueAsync<string>("anyqueue", 1000);
 
             // THEN
-            _mongoContext.Received(1).CollectionExistsAsync("anyqueue");
+            _mongoContext.Received(1).CollectionExistsAsync("anyqueue").IgnoreAwaitForNSubstituteAssertion();
             Assert.That(actual, Is.InstanceOf(expected));
         }
     }
