@@ -20,8 +20,13 @@ namespace RedCapped.Core
             CreateIndex();
         }
 
-        public async void SubscribeAsync(string topic, Func<T, bool> handler)
+        public async void Subscribe(string topic, Func<T, bool> handler)
         {
+            if (string.IsNullOrWhiteSpace(topic))
+            {
+                throw new ArgumentNullException("topic");
+            }
+
             var cancellationToken = new CancellationTokenSource();
             _cancellationTokenList[topic] = cancellationToken;
 
@@ -60,6 +65,11 @@ namespace RedCapped.Core
 
         public void Unsubscribe(string topic)
         {
+            if (string.IsNullOrWhiteSpace(topic))
+            {
+                throw new ArgumentNullException("topic");
+            }
+
             CancellationTokenSource t;
             if (_cancellationTokenList.TryRemove(topic, out t))
             {
@@ -69,6 +79,11 @@ namespace RedCapped.Core
 
         public async Task<string> PublishAsync(string topic, T message)
         {
+            if (string.IsNullOrWhiteSpace(topic))
+            {
+                throw new ArgumentNullException("topic");
+            }
+
             var msg = new RedCappedMessage<T>(message)
             {
                 MessageId = ObjectId.GenerateNewId().ToString(),
