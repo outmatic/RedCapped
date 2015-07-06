@@ -9,14 +9,14 @@ namespace RedCapped.Core
 {
     public class MongoContext : IMongoContext
     {
-        private const string prefix = "red";
+        private const string Prefix = "red";
         private readonly Lazy<IMongoClient> _client;
         private readonly Lazy<IMongoDatabase> _database;
         private readonly CancellationToken _cancellationToken;
 
         private static string CollectionFullName(string collectionName)
         {
-            return string.Format("{0}.{1}", prefix, collectionName);
+            return string.Format("{0}.{1}", Prefix, collectionName);
         }
 
         public MongoContext(string connectionString, string dbName, CancellationToken cancellationToken = default(CancellationToken))
