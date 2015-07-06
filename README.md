@@ -35,7 +35,7 @@ var manager = new RedCappedQueueManager("mongodb://localhost", "mydb");
 // create the queue
 var queue = await manager.CreateQueue<Order>(queueName, 256*1024*1024);
 // subscribe the topic 'new-orders'
-queue.SubscribeAsync("new-orders", order =>
+queue.Subscribe("new-orders", order =>
 {
   Debug.WriteLine("Order #{0} amount {1}", order.Id, order.Amount);
   // if the message was handled, otherwise it will be requeued
