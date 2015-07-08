@@ -32,7 +32,9 @@ namespace RedCapped.Core
         public async Task<IQueueOf<T>> GetQueueAsync<T>(string queueName) where T : class
         {
             var queue = await _mongoContext.Value.GetCollectionAsync<T>(queueName);
-            return queue != null ? new QueueOf<T>(queue) : null;
+            var errorQueue = _mongoContext.Value.GetCollection(string.Format("{0}_err", queueName));
+            
+            return queue != null ? new QueueOf<T>(queue, errorQueue) : null;
         }
     }
 }

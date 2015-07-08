@@ -1,4 +1,5 @@
-﻿using MongoDB.Driver;
+﻿using MongoDB.Bson;
+using MongoDB.Driver;
 
 namespace RedCapped.Core.Tests
 {
@@ -13,8 +14,8 @@ namespace RedCapped.Core.Tests
 
     public class FakeQueueOf<T> : QueueOf<T>
     {
-        public FakeQueueOf(IMongoCollection<RedCappedMessage<T>> collection)
-            : base(collection)
+        public FakeQueueOf(IMongoCollection<RedCappedMessage<T>> collection, IMongoCollection<BsonDocument> errorCollection)
+            : base(collection, errorCollection)
         {
 
         }

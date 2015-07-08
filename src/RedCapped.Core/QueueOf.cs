@@ -12,10 +12,12 @@ namespace RedCapped.Core
     {
         private readonly ConcurrentDictionary<string, CancellationTokenSource> _cancellationTokenList;
         private readonly IMongoCollection<RedCappedMessage<T>> _collection;
+        private readonly IMongoCollection<BsonDocument> _errorCollection;
 
-        protected internal QueueOf(IMongoCollection<RedCappedMessage<T>> collection)
+        protected internal QueueOf(IMongoCollection<RedCappedMessage<T>> collection, IMongoCollection<BsonDocument> errorCollection)
         {
             _collection = collection;
+            _errorCollection = errorCollection;
             _cancellationTokenList = new ConcurrentDictionary<string, CancellationTokenSource>();
             CreateIndex();
         }
@@ -41,17 +43,29 @@ namespace RedCapped.Core
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     using (var cursor = await
-                        _collection.FindAsync(x => x.Header.Type == typeof (T).ToString()
+                        _collection.FindAsync(x => x.Header.Type == typeof(T).ToString()
                                                    & x.Header.AcknowledgedAt == DateTime.MinValue
                                                    & x.Topic == topic, findOptions, cancellationToken.Token))
                     {
                         await cursor.ForEachAsync(async item =>
                         {
-                            if (await AckAsync(item.MessageId)
-                                && !handler(item.Message)
-                                && item.Header.RetryCount < 5)
+                            if (await AckAsync(item.MessageId))
                             {
-                                await PublishAsync(item.Topic, item.Message);
+                                if (!handler(item.Message))
+                                {
+                                    if (item.Header.RetryCount < 5)
+                                    {
+                                        await PublishAsync(item.Topic, item.Message);
+                                    }
+                                    else
+                                    {
+                                        await _errorCollection.InsertOneAsync(item.ToBsonDocument(), cancellationToken.Token);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                await _errorCollection.InsertOneAsync(item.ToBsonDocument(), cancellationToken.Token);
                             }
                         }, cancellationToken.Token);
                     }

@@ -1,5 +1,6 @@
 ﻿using System;
 using MongoDB.Driver;
+using MongoDB.Bson;
 using MongoDB.Driver.Core.Events;
 using NSubstitute;
 using NUnit.Framework;
@@ -12,12 +13,14 @@ namespace RedCapped.Core.Tests
     {
         private QueueOf<string> _sut;
         private IMongoCollection<RedCappedMessage<string>> _collection;
+        private IMongoCollection<BsonDocument> _errorCollection;
 
         [SetUp]
         public void SetUp()
         {
             _collection = Substitute.For<IMongoCollection<RedCappedMessage<string>>>();
-            _sut = new FakeQueueOf<string>(_collection);
+            _errorCollection = Substitute.For<IMongoCollection<BsonDocument>>();
+            _sut = new FakeQueueOf<string>(_collection, _errorCollection);
         }
 
         [Test]
