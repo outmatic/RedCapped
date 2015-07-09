@@ -1,7 +1,6 @@
 ﻿using System;
-using MongoDB.Driver;
 using MongoDB.Bson;
-using MongoDB.Driver.Core.Events;
+using MongoDB.Driver;
 using NSubstitute;
 using NUnit.Framework;
 using RedCapped.Core.Tests.Extensions;
