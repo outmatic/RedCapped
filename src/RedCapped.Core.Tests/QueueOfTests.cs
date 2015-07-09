@@ -24,7 +24,7 @@ namespace RedCapped.Core.Tests
         }
 
         [Test]
-        public async void QueueOf_Create_index_when_instantiated()
+        public async void QueueOf_Creates_index_when_instantiated()
         {
             _collection.Indexes.Received(1).CreateOneAsync(Arg.Any<IndexKeysDefinition<RedCappedMessage<string>>>(),
                 Arg.Any<CreateIndexOptions>()).IgnoreAwaitForNSubstituteAssertion();

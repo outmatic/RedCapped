@@ -65,7 +65,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Extensions\NSubstituteHelper.cs" />
+    <Compile Include="Extensions\NSubstituteHelpers.cs" />
     <Compile Include="FakeObjects.cs" />
     <Compile Include="QueueOfTests.cs" />
     <Compile Include="RedCappedQueueManagerTests.cs" />
