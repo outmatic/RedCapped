@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Threading;
@@ -13,6 +14,8 @@ namespace RedCapped.Core
         private readonly ConcurrentDictionary<string, CancellationTokenSource> _cancellationTokenList;
         private readonly IMongoCollection<RedCappedMessage<T>> _collection;
         private readonly IMongoCollection<BsonDocument> _errorCollection;
+
+        public bool Subscribed { get; private set; }
 
         protected internal QueueOf(IMongoCollection<RedCappedMessage<T>> collection, IMongoCollection<BsonDocument> errorCollection)
         {
@@ -29,7 +32,9 @@ namespace RedCapped.Core
                 throw new ArgumentNullException("topic");
             }
 
-            Task.Run(() => SubscribeInternal(topic, handler));
+            Subscribed = true;
+
+            Task.Factory.StartNew((() => SubscribeInternal(topic, handler)), TaskCreationOptions.LongRunning);
         }
 
         private async Task SubscribeInternal(string topic, Func<T, bool> handler)
@@ -92,6 +97,7 @@ namespace RedCapped.Core
             CancellationTokenSource t;
             if (_cancellationTokenList.TryRemove(topic, out t))
             {
+                Subscribed = false;
                 t.Cancel();
             }
         }
