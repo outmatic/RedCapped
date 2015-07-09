@@ -1,32 +1,20 @@
 ﻿using System;
-using MongoDB.Bson;
-using MongoDB.Driver;
-using NSubstitute;
+using System.Threading;
 using NUnit.Framework;
-using RedCapped.Core.Tests.Extensions;
 
 namespace RedCapped.Core.Tests
 {
     [TestFixture]
     public class QueueOfTests
     {
-        private QueueOf<string> _sut;
-        private IMongoCollection<RedCappedMessage<string>> _collection;
-        private IMongoCollection<BsonDocument> _errorCollection;
+        private IQueueOf<string> _sut;
+        private RedCappedQueueManager _manager;
 
         [SetUp]
         public void SetUp()
         {
-            _collection = Substitute.For<IMongoCollection<RedCappedMessage<string>>>();
-            _errorCollection = Substitute.For<IMongoCollection<BsonDocument>>();
-            _sut = new FakeQueueOf<string>(_collection, _errorCollection);
-        }
-
-        [Test]
-        public async void QueueOf_Creates_index_when_instantiated()
-        {
-            _collection.Indexes.Received(1).CreateOneAsync(Arg.Any<IndexKeysDefinition<RedCappedMessage<string>>>(),
-                Arg.Any<CreateIndexOptions>()).IgnoreAwaitForNSubstituteAssertion();
+            _manager = new RedCappedQueueManager("mongodb://localhost", "redcappedtest");
+            _sut = _manager.CreateQueueAsync<string>("testqueue", 4096).Result;
         }
 
         [Test]
@@ -48,14 +36,41 @@ namespace RedCapped.Core.Tests
 
         [Test]
         [ExpectedException(typeof(ArgumentNullException))]
-        public async void QueueOf_Cannot_subscribe_without_topic()
+        public void QueueOf_Cannot_subscribe_without_topic()
         {
             _sut.Subscribe("", m => true);
         }
 
         [Test]
+        public void QueueOf_Subscribe_and_handle_message()
+        {
+            // GIVEN
+            const string expected = "hi I'm a message!";
+
+            var id = _sut.PublishAsync("anytopic", expected).Result;
+
+            string actual = null;
+
+            // WHEN
+            _sut.Subscribe("anytopic", m =>
+            {
+                actual = m;
+                return true;
+            });
+
+            // THEN
+            Assert.That(id, Is.Not.Null);
+
+            while (actual == null)
+            {
+                Thread.Sleep(100);
+            }
+            Assert.That(actual, Is.EqualTo(expected));
+        }
+
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
-        public async void QueueOf_Cannot_unsubscribe_without_topic()
+        public void QueueOf_Cannot_unsubscribe_without_topic()
         {
             _sut.Unsubscribe("");
         }

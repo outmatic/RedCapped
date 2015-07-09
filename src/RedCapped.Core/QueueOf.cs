@@ -22,13 +22,18 @@ namespace RedCapped.Core
             CreateIndex();
         }
 
-        public async void Subscribe(string topic, Func<T, bool> handler)
+        public void Subscribe(string topic, Func<T, bool> handler)
         {
             if (string.IsNullOrWhiteSpace(topic))
             {
                 throw new ArgumentNullException("topic");
             }
 
+            Task.Run(() => SubscribeInternal(topic, handler));
+        }
+
+        private async Task SubscribeInternal(string topic, Func<T, bool> handler)
+        {
             var cancellationToken = new CancellationTokenSource();
             _cancellationTokenList[topic] = cancellationToken;
 

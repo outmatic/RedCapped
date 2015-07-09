@@ -7,7 +7,7 @@ using RedCapped.Core.Tests.Extensions;
 namespace RedCapped.Core.Tests
 {
     [TestFixture]
-    public class RedCappedQueueManagerTests
+    public class RedCappedQueueManagerUnitTests
     {
         private FakeRedCappedQueueManager _sut;
         private IMongoContext _mongoContext;

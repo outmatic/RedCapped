@@ -68,7 +68,7 @@
     <Compile Include="Extensions\NSubstituteHelpers.cs" />
     <Compile Include="FakeObjects.cs" />
     <Compile Include="QueueOfTests.cs" />
-    <Compile Include="RedCappedQueueManagerTests.cs" />
+    <Compile Include="RedCappedQueueManagerUnitTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
