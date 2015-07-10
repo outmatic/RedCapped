@@ -5,7 +5,6 @@ using NUnit.Framework;
 namespace RedCapped.Core.Tests
 {
     [TestFixture]
-    [Ignore]
     public class QueueOfTests
     {
         private IQueueOf<string> _sut;
