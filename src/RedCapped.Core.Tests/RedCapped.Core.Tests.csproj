@@ -67,6 +67,7 @@
   <ItemGroup>
     <Compile Include="Extensions\NSubstituteHelpers.cs" />
     <Compile Include="FakeObjects.cs" />
+    <Compile Include="MongoDbUtils.cs" />
     <Compile Include="QueueOfTests.cs" />
     <Compile Include="RedCappedQueueManagerUnitTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
