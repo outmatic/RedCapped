@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Redcapped by petrhaus</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Redcapped</h1>
+      <h2 class="project-tagline">a .NET message queue system built on top of MongoDb.</h2>
+      <a href="https://github.com/petrhaus/RedCapped" class="btn">View on GitHub</a>
+      <a href="https://github.com/petrhaus/RedCapped/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/petrhaus/RedCapped/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h1>
+<a id="red-capped" class="anchor" href="#red-capped" aria-hidden="true"><span class="octicon octicon-link"></span></a>Red Capped</h1>
+
+<p>a .NET message queue system built on top of MongoDb.</p>
+
+<p><a href="https://ci.appveyor.com/project/petrhaus/redcapped"><img src="https://ci.appveyor.com/api/projects/status/34vnj5l5gdu6i3t4?svg=true" alt="Build status"></a></p>
+
+<h2>
+<a id="how-to-publish-messages" class="anchor" href="#how-to-publish-messages" aria-hidden="true"><span class="octicon octicon-link"></span></a>How to publish messages</h2>
+
+<div class="highlight highlight-csharp"><pre><span class="pl-c">// the payload of your message</span>
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">Order</span>
+{
+  <span class="pl-k">public</span> <span class="pl-k">int</span> <span class="pl-en">Id</span> { <span class="pl-k">get</span>; <span class="pl-k">set</span>; }
+  <span class="pl-k">public</span> <span class="pl-k">decimal</span> <span class="pl-en">Amount</span> { <span class="pl-k">get</span>; <span class="pl-k">set</span>; }
+  ...
+}
+
+<span class="pl-c">// create the queues manager</span>
+<span class="pl-k">var</span> manager = <span class="pl-k">new</span> RedCappedQueueManager(<span class="pl-s"><span class="pl-pds">"</span>mongodb://localhost<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>mydb<span class="pl-pds">"</span></span>);
+<span class="pl-c">// create the queue</span>
+<span class="pl-k">var</span> queue = <span class="pl-k">await</span> manager.CreateQueue&lt;Order&gt;(queueName, <span class="pl-c1">256</span>*<span class="pl-c1">1024</span>*<span class="pl-c1">1024</span>);
+<span class="pl-c">// publish!</span>
+<span class="pl-k">await</span> queue.PublishAsync(<span class="pl-s"><span class="pl-pds">"</span>new-orders<span class="pl-pds">"</span></span>, <span class="pl-k">new</span> Order { Id = <span class="pl-c1">123</span>, Amount = 120M });</pre></div>
+
+<h2>
+<a id="how-to-subscribe-and-receive-messages" class="anchor" href="#how-to-subscribe-and-receive-messages" aria-hidden="true"><span class="octicon octicon-link"></span></a>How to subscribe and receive messages</h2>
+
+<div class="highlight highlight-csharp"><pre><span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">Order</span>
+{
+  <span class="pl-k">public</span> <span class="pl-k">int</span> <span class="pl-en">Id</span> { <span class="pl-k">get</span>; <span class="pl-k">set</span>; }
+  <span class="pl-k">public</span> <span class="pl-k">decimal</span> <span class="pl-en">Amount</span> { <span class="pl-k">get</span>; <span class="pl-k">set</span>; }
+  ...
+}
+
+<span class="pl-c">// create the queues manager</span>
+<span class="pl-k">var</span> manager = <span class="pl-k">new</span> RedCappedQueueManager(<span class="pl-s"><span class="pl-pds">"</span>mongodb://localhost<span class="pl-pds">"</span></span>, <span class="pl-s"><span class="pl-pds">"</span>mydb<span class="pl-pds">"</span></span>);
+<span class="pl-c">// create the queue</span>
+<span class="pl-k">var</span> queue = <span class="pl-k">await</span> manager.CreateQueue&lt;Order&gt;(queueName, <span class="pl-c1">256</span>*<span class="pl-c1">1024</span>*<span class="pl-c1">1024</span>);
+<span class="pl-c">// subscribe the topic 'new-orders'</span>
+queue.Subscribe(<span class="pl-s"><span class="pl-pds">"</span>new-orders<span class="pl-pds">"</span></span>, order =&gt;
+{
+  Debug.WriteLine(<span class="pl-s"><span class="pl-pds">"</span>Order #{0} amount {1}<span class="pl-pds">"</span></span>, order.Id, order.Amount);
+  <span class="pl-c">// if the message was handled, otherwise it will be requeued</span>
+  <span class="pl-k">return</span> <span class="pl-c1">true</span>;
+});</pre></div>
+
+<p>N.B.This is a work in progress and is subject to change, use it at your own risk!</p>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/petrhaus/RedCapped">Redcapped</a> is maintained by <a href="https://github.com/petrhaus">petrhaus</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
+
