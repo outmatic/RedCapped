@@ -12,21 +12,32 @@ namespace RedCapped.Core
     {
         private readonly ConcurrentDictionary<string, CancellationTokenSource> _cancellationTokenList;
         private readonly IMongoCollection<RedCappedMessage<T>> _collection;
+        private readonly IMongoCollection<BsonDocument> _errorCollection;
 
-        protected internal QueueOf(IMongoCollection<RedCappedMessage<T>> collection)
+        public bool Subscribed { get; private set; }
+
+        protected internal QueueOf(IMongoCollection<RedCappedMessage<T>> collection, IMongoCollection<BsonDocument> errorCollection)
         {
             _collection = collection;
+            _errorCollection = errorCollection;
             _cancellationTokenList = new ConcurrentDictionary<string, CancellationTokenSource>();
             CreateIndex();
         }
 
-        public async void Subscribe(string topic, Func<T, bool> handler)
+        public void Subscribe(string topic, Func<T, bool> handler)
         {
             if (string.IsNullOrWhiteSpace(topic))
             {
                 throw new ArgumentNullException("topic");
             }
 
+            Subscribed = true;
+
+            Task.Factory.StartNew((() => SubscribeInternal(topic, handler)), TaskCreationOptions.LongRunning);
+        }
+
+        private async Task SubscribeInternal(string topic, Func<T, bool> handler)
+        {
             var cancellationToken = new CancellationTokenSource();
             _cancellationTokenList[topic] = cancellationToken;
 
@@ -41,17 +52,29 @@ namespace RedCapped.Core
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     using (var cursor = await
-                        _collection.FindAsync(x => x.Header.Type == typeof (T).ToString()
+                        _collection.FindAsync(x => x.Header.Type == typeof(T).ToString()
                                                    & x.Header.AcknowledgedAt == DateTime.MinValue
                                                    & x.Topic == topic, findOptions, cancellationToken.Token))
                     {
                         await cursor.ForEachAsync(async item =>
                         {
-                            if (await AckAsync(item.MessageId)
-                                && !handler(item.Message)
-                                && item.Header.RetryCount < 5)
+                            if (await AckAsync(item.MessageId))
                             {
-                                await PublishAsync(item.Topic, item.Message);
+                                if (!handler(item.Message))
+                                {
+                                    if (item.Header.ReceiveAttempts < item.Header.ReceiveLimit)
+                                    {
+                                        await PublishAsync(item.Topic, item.Message);
+                                    }
+                                    else
+                                    {
+                                        await _errorCollection.InsertOneAsync(item.ToBsonDocument(), cancellationToken.Token);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                await _errorCollection.InsertOneAsync(item.ToBsonDocument(), cancellationToken.Token);
                             }
                         }, cancellationToken.Token);
                     }
@@ -71,17 +94,25 @@ namespace RedCapped.Core
             }
 
             CancellationTokenSource t;
-            if (_cancellationTokenList.TryRemove(topic, out t))
+            if (!_cancellationTokenList.TryRemove(topic, out t))
             {
-                t.Cancel();
+                return;
             }
+
+            Subscribed = false;
+            t.Cancel();
         }
 
-        public async Task<string> PublishAsync(string topic, T message)
+        public async Task<string> PublishAsync(string topic, T message, int receiveLimit = 3)
         {
             if (string.IsNullOrWhiteSpace(topic))
             {
                 throw new ArgumentNullException("topic");
+            }
+
+            if (receiveLimit < 1)
+            {
+                throw new ArgumentException("receiveLimit cannot be less than 1", "receiveLimit");
             }
 
             var msg = new RedCappedMessage<T>(message)
@@ -89,7 +120,9 @@ namespace RedCapped.Core
                 MessageId = ObjectId.GenerateNewId().ToString(),
                 Header = new MessageHeader<T>
                 {
-                    SentAt = DateTime.Now
+                    SentAt = DateTime.Now,
+                    AcknowledgedAt = DateTime.MinValue,
+                    ReceiveLimit = receiveLimit
                 },
                 Topic = topic
             };
@@ -119,7 +152,7 @@ namespace RedCapped.Core
                      & x.Header.AcknowledgedAt == DateTime.MinValue,
                 Builders<RedCappedMessage<T>>.Update
                     .Set(x => x.Header.AcknowledgedAt, DateTime.Now)
-                    .Inc(x => x.Header.RetryCount, 1)
+                    .Inc(x => x.Header.ReceiveAttempts, 1)
                 );
 
             return result.MatchedCount == 1 && result.ModifiedCount == 1;

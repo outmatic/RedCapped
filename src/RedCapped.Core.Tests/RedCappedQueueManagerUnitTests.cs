@@ -7,7 +7,7 @@ using RedCapped.Core.Tests.Extensions;
 namespace RedCapped.Core.Tests
 {
     [TestFixture]
-    public class RedCappedQueueManagerTests
+    public class RedCappedQueueManagerUnitTests
     {
         private FakeRedCappedQueueManager _sut;
         private IMongoContext _mongoContext;
@@ -25,7 +25,7 @@ namespace RedCapped.Core.Tests
         }
 
         [Test]
-        public async void RedCappedQueueManager_Can_get_existent_queue()
+        public async void GetQueueAsync_returns_existent_queue()
         {
             // GIVEN
             var expected = typeof(IQueueOf<string>);
@@ -40,7 +40,7 @@ namespace RedCapped.Core.Tests
         }
 
         [Test]
-        public async void RedCappedQueueManager_Returns_null_for_non_existent_queues()
+        public async void GetQueueAsync_returns_null_for_unexistent_queue()
         {
             // GIVEN
             _mongoContext.GetCollectionAsync<string>("anyqueue")
@@ -56,7 +56,7 @@ namespace RedCapped.Core.Tests
         }
 
         [Test]
-        public async void RedCappedQueueManager_Can_create_queue()
+        public async void CreateQueueAsync_creates_a_new_queue_by_checking_if_it_exists()
         {
             // GIVEN
             var expected = typeof(IQueueOf<string>);
@@ -75,7 +75,7 @@ namespace RedCapped.Core.Tests
         }
 
         [Test]
-        public async void RedCappedQueueManager_Create_an_existing_queue_returns_existing_queue()
+        public async void CreateQueueAsync_returns_existing_queue_if_it_exists()
         {
             // GIVEN
             var expected = typeof(IQueueOf<string>);

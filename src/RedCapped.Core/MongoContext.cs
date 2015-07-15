@@ -66,5 +66,10 @@ namespace RedCapped.Core
 
             return null;
         }
+
+        public IMongoCollection<BsonDocument> GetCollection(string collectionName)
+        {
+            return _database.Value.GetCollection<BsonDocument>(CollectionFullName(collectionName));
+        }
     }
 }
