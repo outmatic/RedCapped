@@ -10,15 +10,20 @@ namespace RedCapped.Core.Tests
         private IQueueOf<string> _sut;
         private RedCappedQueueManager _manager;
 
+        public QueueOfTests()
+        {
+            MongoDbUtils.DropDatabase();
+        }
+
         [SetUp]
         public void SetUp()
         {
-            _manager = new RedCappedQueueManager("mongodb://localhost", "redcappedtest");
+            _manager = new RedCappedQueueManager(MongoDbUtils.ConnectionString, MongoDbUtils.DatabaseName);
             _sut = _manager.CreateQueueAsync<string>("testqueue", 4096).Result;
         }
 
         [Test]
-        public async void QueueOf_Can_publish_messages()
+        public async void PublishAsync_can_publish_a_message()
         {
             // WHEN
             var actual = await _sut.PublishAsync("anytopic", "hi!");
@@ -28,27 +33,32 @@ namespace RedCapped.Core.Tests
         }
 
         [Test]
-        [ExpectedException(typeof(ArgumentNullException))]
-        public async void QueueOf_Cannot_publish_messages_without_topic()
+        public void PublishAsync_throws_when_no_topic()
         {
-            var actual = await _sut.PublishAsync("", "hi!");
+            Assert.Throws<ArgumentNullException>(async () => await _sut.PublishAsync("", "hi!"));
+        }
+
+        [Test]
+        public void PublishAsync_throws_when_receive_limit_too_low()
+        {
+            Assert.Throws<ArgumentException>(async () => await _sut.PublishAsync("anytopic", "hi!", 0));
         }
 
         [Test]
         [ExpectedException(typeof(ArgumentNullException))]
-        public void QueueOf_Cannot_subscribe_without_topic()
+        public void Subscribe_throws_when_no_topic()
         {
             _sut.Subscribe("", m => true);
         }
 
         [Test]
         [Timeout(5000)]
-        public void QueueOf_Subscribe_and_handle_message()
+        public async void Subscribe_receives_message()
         {
             // GIVEN
             const string expected = "hi I'm a message!";
 
-            var id = _sut.PublishAsync("anytopic", expected).Result;
+            var id = await _sut.PublishAsync("anytopic", expected);
 
             string actual = null;
 
@@ -70,8 +80,16 @@ namespace RedCapped.Core.Tests
         }
 
         [Test]
+        public void Unsubscribe_can_be_safely_called_multiple_times()
+        {
+            _sut.Unsubscribe("unexistent-topic");
+            _sut.Unsubscribe("unexistent-topic");
+            _sut.Unsubscribe("unexistent-topic");
+        }
+
+        [Test]
         [ExpectedException(typeof(ArgumentNullException))]
-        public void QueueOf_Cannot_unsubscribe_without_topic()
+        public void Unsubscribe_throws_when_no_topic()
         {
             _sut.Unsubscribe("");
         }
