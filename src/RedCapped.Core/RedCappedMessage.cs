@@ -21,8 +21,12 @@ namespace RedCapped.Core
         [BsonElement("ack")]
         public DateTime AcknowledgedAt { get; set; }
 
-        [BsonElement("retry")]
-        public int RetryCount { get; set; }
+        [BsonElement("receive-limit")]
+        [BsonIgnoreIfDefault]
+        public int ReceiveLimit { get; set; }
+
+        [BsonElement("receive-attempts")]
+        public int ReceiveAttempts { get; set; }
     }
 
     public class RedCappedMessage<T>

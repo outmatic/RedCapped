@@ -1,5 +1,4 @@
 ﻿using System;
-using System.CodeDom;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Threading;
@@ -63,7 +62,7 @@ namespace RedCapped.Core
                             {
                                 if (!handler(item.Message))
                                 {
-                                    if (item.Header.RetryCount < 5)
+                                    if (item.Header.ReceiveAttempts < item.Header.ReceiveLimit)
                                     {
                                         await PublishAsync(item.Topic, item.Message);
                                     }
@@ -95,18 +94,25 @@ namespace RedCapped.Core
             }
 
             CancellationTokenSource t;
-            if (_cancellationTokenList.TryRemove(topic, out t))
+            if (!_cancellationTokenList.TryRemove(topic, out t))
             {
-                Subscribed = false;
-                t.Cancel();
+                return;
             }
+
+            Subscribed = false;
+            t.Cancel();
         }
 
-        public async Task<string> PublishAsync(string topic, T message)
+        public async Task<string> PublishAsync(string topic, T message, int receiveLimit = 3)
         {
             if (string.IsNullOrWhiteSpace(topic))
             {
                 throw new ArgumentNullException("topic");
+            }
+
+            if (receiveLimit < 1)
+            {
+                throw new ArgumentException("receiveLimit cannot be less than 1", "receiveLimit");
             }
 
             var msg = new RedCappedMessage<T>(message)
@@ -114,7 +120,9 @@ namespace RedCapped.Core
                 MessageId = ObjectId.GenerateNewId().ToString(),
                 Header = new MessageHeader<T>
                 {
-                    SentAt = DateTime.Now
+                    SentAt = DateTime.Now,
+                    AcknowledgedAt = DateTime.MinValue,
+                    ReceiveLimit = receiveLimit
                 },
                 Topic = topic
             };
@@ -144,7 +152,7 @@ namespace RedCapped.Core
                      & x.Header.AcknowledgedAt == DateTime.MinValue,
                 Builders<RedCappedMessage<T>>.Update
                     .Set(x => x.Header.AcknowledgedAt, DateTime.Now)
-                    .Inc(x => x.Header.RetryCount, 1)
+                    .Inc(x => x.Header.ReceiveAttempts, 1)
                 );
 
             return result.MatchedCount == 1 && result.ModifiedCount == 1;
