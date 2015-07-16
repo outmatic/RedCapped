@@ -14,15 +14,16 @@ namespace RedCapped.Core
         private readonly IMongoCollection<RedCappedMessage<T>> _collection;
         private readonly IMongoCollection<BsonDocument> _errorCollection;
 
-        public bool Subscribed { get; private set; }
-
-        protected internal QueueOf(IMongoCollection<RedCappedMessage<T>> collection, IMongoCollection<BsonDocument> errorCollection)
+        protected internal QueueOf(IMongoCollection<RedCappedMessage<T>> collection,
+            IMongoCollection<BsonDocument> errorCollection)
         {
             _collection = collection;
             _errorCollection = errorCollection;
             _cancellationTokenList = new ConcurrentDictionary<string, CancellationTokenSource>();
             CreateIndex();
         }
+
+        public bool Subscribed { get; private set; }
 
         public void Subscribe(string topic, Func<T, bool> handler)
         {
@@ -34,6 +35,68 @@ namespace RedCapped.Core
             Subscribed = true;
 
             Task.Factory.StartNew((() => SubscribeInternal(topic, handler)), TaskCreationOptions.LongRunning);
+        }
+
+        public void Unsubscribe(string topic)
+        {
+            if (string.IsNullOrWhiteSpace(topic))
+            {
+                throw new ArgumentNullException("topic");
+            }
+
+            CancellationTokenSource t;
+            if (!_cancellationTokenList.TryRemove(topic, out t))
+            {
+                return;
+            }
+
+            Subscribed = false;
+            t.Cancel();
+        }
+
+        public async Task<string> PublishAsync(string topic, T message, int retryLimit = 3, QoS qos = QoS.Normal)
+        {
+            if (string.IsNullOrWhiteSpace(topic))
+            {
+                throw new ArgumentNullException("topic");
+            }
+
+            if (retryLimit < 1)
+            {
+                throw new ArgumentException("retryLimit cannot be less than 1", "retryLimit");
+            }
+
+            var msg = new RedCappedMessage<T>(message)
+            {
+                MessageId = ObjectId.GenerateNewId().ToString(),
+                Header = new MessageHeader<T>
+                {
+                    SentAt = DateTime.Now,
+                    AcknowledgedAt = DateTime.MinValue,
+                    RetryLimit = retryLimit
+                },
+                Topic = topic
+            };
+
+            WriteConcern w;
+
+            switch (qos)
+            {
+                default:
+                    w = WriteConcern.Acknowledged;
+                    break;
+                case QoS.Low:
+                    w = WriteConcern.Unacknowledged;
+                    break;
+                case QoS.High:
+                    w = WriteConcern.WMajority;
+                    break;
+            }
+
+            await
+                _collection.WithWriteConcern(w).InsertOneAsync(msg);
+
+            return msg.MessageId;
         }
 
         private async Task SubscribeInternal(string topic, Func<T, bool> handler)
@@ -68,7 +131,9 @@ namespace RedCapped.Core
                                     }
                                     else
                                     {
-                                        await _errorCollection.InsertOneAsync(item.ToBsonDocument(), cancellationToken.Token);
+                                        await
+                                            _errorCollection.WithWriteConcern(WriteConcern.Acknowledged).InsertOneAsync(item.ToBsonDocument(),
+                                                cancellationToken.Token);
                                     }
                                 }
                             }
@@ -84,52 +149,6 @@ namespace RedCapped.Core
             {
                 Debug.WriteLine("Cancellation Requested");
             }
-        }
-
-        public void Unsubscribe(string topic)
-        {
-            if (string.IsNullOrWhiteSpace(topic))
-            {
-                throw new ArgumentNullException("topic");
-            }
-
-            CancellationTokenSource t;
-            if (!_cancellationTokenList.TryRemove(topic, out t))
-            {
-                return;
-            }
-
-            Subscribed = false;
-            t.Cancel();
-        }
-
-        public async Task<string> PublishAsync(string topic, T message, int retryLimit = 3)
-        {
-            if (string.IsNullOrWhiteSpace(topic))
-            {
-                throw new ArgumentNullException("topic");
-            }
-
-            if (retryLimit < 1)
-            {
-                throw new ArgumentException("retryLimit cannot be less than 1", "retryLimit");
-            }
-
-            var msg = new RedCappedMessage<T>(message)
-            {
-                MessageId = ObjectId.GenerateNewId().ToString(),
-                Header = new MessageHeader<T>
-                {
-                    SentAt = DateTime.Now,
-                    AcknowledgedAt = DateTime.MinValue,
-                    RetryLimit = retryLimit
-                },
-                Topic = topic
-            };
-
-            await _collection.InsertOneAsync(msg);
-
-            return msg.MessageId;
         }
 
         private async void CreateIndex()
