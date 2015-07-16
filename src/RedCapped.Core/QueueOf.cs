@@ -54,16 +54,6 @@ namespace RedCapped.Core
             t.Cancel();
         }
 
-        private async Task<string> PublishAsyncInternal(RedCappedMessage<T> message)
-        {
-            message.MessageId = ObjectId.GenerateNewId().ToString();
-
-            await
-                _collection.WithWriteConcern(QosToWriteConcern(message.Header.QoS)).InsertOneAsync(message);
-
-            return message.MessageId;
-        }
-
         public async Task<string> PublishAsync(string topic, T message, int retryLimit = 3, QoS qos = QoS.Normal)
         {
             if (string.IsNullOrWhiteSpace(topic))
@@ -91,6 +81,16 @@ namespace RedCapped.Core
             return await PublishAsyncInternal(msg);
         }
 
+        private async Task<string> PublishAsyncInternal(RedCappedMessage<T> message)
+        {
+            message.MessageId = ObjectId.GenerateNewId().ToString();
+
+            await
+                _collection.WithWriteConcern(QosToWriteConcern(message.Header.QoS)).InsertOneAsync(message);
+
+            return message.MessageId;
+        }
+
         private async Task SubscribeInternal(string topic, Func<T, bool> handler)
         {
             var cancellationToken = new CancellationTokenSource();
@@ -107,7 +107,7 @@ namespace RedCapped.Core
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     using (var cursor = await
-                        _collection.FindAsync(x => x.Header.Type == typeof(T).ToString()
+                        _collection.FindAsync(x => x.Header.Type == typeof (T).ToString()
                                                    & x.Header.AcknowledgedAt == DateTime.MinValue
                                                    & x.Topic == topic, findOptions, cancellationToken.Token))
                     {
@@ -136,7 +136,9 @@ namespace RedCapped.Core
 
                             if (error)
                             {
-                                await _errorCollection.WithWriteConcern(QosToWriteConcern(item.Header.QoS)).InsertOneAsync(item.ToBsonDocument(), cancellationToken.Token);
+                                await
+                                    _errorCollection.WithWriteConcern(QosToWriteConcern(item.Header.QoS))
+                                        .InsertOneAsync(item.ToBsonDocument(), cancellationToken.Token);
                             }
                         }, cancellationToken.Token);
                     }
