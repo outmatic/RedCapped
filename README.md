@@ -3,9 +3,8 @@ a .NET message queue system built on top of MongoDb.
 
 [![Build status](https://ci.appveyor.com/api/projects/status/34vnj5l5gdu6i3t4?svg=true)](https://ci.appveyor.com/project/petrhaus/redcapped)
 
-### Given a payload
+### Define the message payload
 ```csharp
-// the payload of your message
 public class Order
 {
   public int Id { get; set; }
