@@ -15,6 +15,9 @@ namespace RedCapped.Core
             get { return typeof(T).FullName; }
         }
 
+        [BsonElement("qos")]
+        public QoS QoS { get; set; }
+
         [BsonElement("sent")]
         public DateTime SentAt { get; set; }
 

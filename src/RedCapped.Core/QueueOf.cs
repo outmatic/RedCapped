@@ -54,6 +54,16 @@ namespace RedCapped.Core
             t.Cancel();
         }
 
+        private async Task<string> PublishAsyncInternal(RedCappedMessage<T> message)
+        {
+            message.MessageId = ObjectId.GenerateNewId().ToString();
+
+            await
+                _collection.WithWriteConcern(QosToWriteConcern(message.Header.QoS)).InsertOneAsync(message);
+
+            return message.MessageId;
+        }
+
         public async Task<string> PublishAsync(string topic, T message, int retryLimit = 3, QoS qos = QoS.Normal)
         {
             if (string.IsNullOrWhiteSpace(topic))
@@ -68,9 +78,9 @@ namespace RedCapped.Core
 
             var msg = new RedCappedMessage<T>(message)
             {
-                MessageId = ObjectId.GenerateNewId().ToString(),
                 Header = new MessageHeader<T>
                 {
+                    QoS = qos,
                     SentAt = DateTime.Now,
                     AcknowledgedAt = DateTime.MinValue,
                     RetryLimit = retryLimit
@@ -78,25 +88,7 @@ namespace RedCapped.Core
                 Topic = topic
             };
 
-            WriteConcern w;
-
-            switch (qos)
-            {
-                default:
-                    w = WriteConcern.Acknowledged;
-                    break;
-                case QoS.Low:
-                    w = WriteConcern.Unacknowledged;
-                    break;
-                case QoS.High:
-                    w = WriteConcern.WMajority;
-                    break;
-            }
-
-            await
-                _collection.WithWriteConcern(w).InsertOneAsync(msg);
-
-            return msg.MessageId;
+            return await PublishAsyncInternal(msg);
         }
 
         private async Task SubscribeInternal(string topic, Func<T, bool> handler)
@@ -121,25 +113,30 @@ namespace RedCapped.Core
                     {
                         await cursor.ForEachAsync(async item =>
                         {
+                            var error = false;
+
                             if (await AckAsync(item.MessageId))
                             {
                                 if (!handler(item.Message))
                                 {
                                     if (item.Header.RetryCount < item.Header.RetryLimit)
                                     {
-                                        await PublishAsync(item.Topic, item.Message);
+                                        await PublishAsyncInternal(item);
                                     }
                                     else
                                     {
-                                        await
-                                            _errorCollection.WithWriteConcern(WriteConcern.Acknowledged).InsertOneAsync(item.ToBsonDocument(),
-                                                cancellationToken.Token);
+                                        error = true;
                                     }
                                 }
                             }
                             else
                             {
-                                await _errorCollection.InsertOneAsync(item.ToBsonDocument(), cancellationToken.Token);
+                                error = true;
+                            }
+
+                            if (error)
+                            {
+                                await _errorCollection.WithWriteConcern(QosToWriteConcern(item.Header.QoS)).InsertOneAsync(item.ToBsonDocument(), cancellationToken.Token);
                             }
                         }, cancellationToken.Token);
                     }
@@ -175,6 +172,26 @@ namespace RedCapped.Core
                 );
 
             return result.MatchedCount == 1 && result.ModifiedCount == 1;
+        }
+
+        private WriteConcern QosToWriteConcern(QoS qos)
+        {
+            WriteConcern w;
+
+            switch (qos)
+            {
+                default:
+                    w = WriteConcern.Acknowledged;
+                    break;
+                case QoS.Low:
+                    w = WriteConcern.Unacknowledged;
+                    break;
+                case QoS.High:
+                    w = WriteConcern.WMajority;
+                    break;
+            }
+
+            return w;
         }
     }
 }
