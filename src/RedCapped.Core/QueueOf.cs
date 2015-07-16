@@ -176,7 +176,7 @@ namespace RedCapped.Core
             return result.MatchedCount == 1 && result.ModifiedCount == 1;
         }
 
-        private WriteConcern QosToWriteConcern(QoS qos)
+        private static WriteConcern QosToWriteConcern(QoS qos)
         {
             WriteConcern w;
 
