@@ -38,4 +38,4 @@ queue.Subscribe("new-orders", order =>
   return true;
 });
 ```
-N.B.This is a work in progress and is subject to change, use it at your own risk!
+N.B. This is a work in progress and is subject to change, use it at your own risk!
