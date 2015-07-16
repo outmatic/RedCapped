@@ -2,8 +2,8 @@
 a .NET message queue system built on top of MongoDb.
 
 [![Build status](https://ci.appveyor.com/api/projects/status/34vnj5l5gdu6i3t4?svg=true)](https://ci.appveyor.com/project/petrhaus/redcapped)
-## How to publish messages 
 
+### Given a payload
 ```csharp
 // the payload of your message
 public class Order
@@ -12,7 +12,11 @@ public class Order
   public decimal Amount { get; set; }
   ...
 }
+```
 
+## How to publish messages 
+
+```csharp
 // create the queues manager
 var manager = new RedCappedQueueManager("mongodb://localhost", "mydb");
 // create the queue
@@ -23,13 +27,6 @@ await queue.PublishAsync("new-orders", new Order { Id = 123, Amount = 120M });
 ## How to subscribe and receive messages
 
 ```csharp
-public class Order
-{
-  public int Id { get; set; }
-  public decimal Amount { get; set; }
-  ...
-}
-
 // create the queues manager
 var manager = new RedCappedQueueManager("mongodb://localhost", "mydb");
 // create the queue
