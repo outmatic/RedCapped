@@ -62,7 +62,7 @@ namespace RedCapped.Core
                             {
                                 if (!handler(item.Message))
                                 {
-                                    if (item.Header.ReceiveAttempts < item.Header.ReceiveLimit)
+                                    if (item.Header.RetryCount < item.Header.RetryLimit)
                                     {
                                         await PublishAsync(item.Topic, item.Message);
                                     }
@@ -103,16 +103,16 @@ namespace RedCapped.Core
             t.Cancel();
         }
 
-        public async Task<string> PublishAsync(string topic, T message, int receiveLimit = 3)
+        public async Task<string> PublishAsync(string topic, T message, int retryLimit = 3)
         {
             if (string.IsNullOrWhiteSpace(topic))
             {
                 throw new ArgumentNullException("topic");
             }
 
-            if (receiveLimit < 1)
+            if (retryLimit < 1)
             {
-                throw new ArgumentException("receiveLimit cannot be less than 1", "receiveLimit");
+                throw new ArgumentException("retryLimit cannot be less than 1", "retryLimit");
             }
 
             var msg = new RedCappedMessage<T>(message)
@@ -122,7 +122,7 @@ namespace RedCapped.Core
                 {
                     SentAt = DateTime.Now,
                     AcknowledgedAt = DateTime.MinValue,
-                    ReceiveLimit = receiveLimit
+                    RetryLimit = retryLimit
                 },
                 Topic = topic
             };
@@ -152,7 +152,7 @@ namespace RedCapped.Core
                      & x.Header.AcknowledgedAt == DateTime.MinValue,
                 Builders<RedCappedMessage<T>>.Update
                     .Set(x => x.Header.AcknowledgedAt, DateTime.Now)
-                    .Inc(x => x.Header.ReceiveAttempts, 1)
+                    .Inc(x => x.Header.RetryCount, 1)
                 );
 
             return result.MatchedCount == 1 && result.ModifiedCount == 1;
