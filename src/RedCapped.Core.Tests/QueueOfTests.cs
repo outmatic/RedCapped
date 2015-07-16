@@ -68,12 +68,12 @@ namespace RedCapped.Core.Tests
             // GIVEN
             const string expected = "hi I'm a message!";
 
-            var id = await _sut.PublishAsync("anytopic", expected);
+            var id = await _sut.PublishAsync("anothertopic", expected);
 
             string actual = null;
 
             // WHEN
-            _sut.Subscribe("anytopic", m =>
+            _sut.Subscribe("anothertopic", m =>
             {
                 actual = m;
                 return true;
