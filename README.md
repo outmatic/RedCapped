@@ -13,7 +13,7 @@ public class Order
 }
 ```
 
-## How to publish messages 
+### How to publish messages 
 
 ```csharp
 // create the queues manager
@@ -23,7 +23,7 @@ var queue = await manager.CreateQueue<Order>(queueName, 256*1024*1024);
 // publish!
 await queue.PublishAsync("new-orders", new Order { Id = 123, Amount = 120M });
 ```
-## How to subscribe and receive messages
+### How to subscribe and receive messages
 
 ```csharp
 // create the queues manager
