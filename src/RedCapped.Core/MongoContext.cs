@@ -7,7 +7,7 @@ using MongoDB.Driver;
 
 namespace RedCapped.Core
 {
-    public class MongoContext : IMongoContext
+    internal class MongoContext : IMongoContext
     {
         private const string Prefix = "red";
         private const int CollectionMaxSize = 4096;
@@ -24,6 +24,7 @@ namespace RedCapped.Core
         {
             _client = new Lazy<IMongoClient>(() => new MongoClient(connectionString));
             _database = new Lazy<IMongoDatabase>(() => _client.Value.GetDatabase(dbName));
+
             _cancellationToken = cancellationToken;
         }
 
@@ -57,11 +58,11 @@ namespace RedCapped.Core
             await _database.Value.CreateCollectionAsync(CollectionFullName(collectionName), opt, _cancellationToken);
         }
 
-        public async Task<IMongoCollection<RedCappedMessage<T>>> GetCollectionAsync<T>(string collectionName)
+        public async Task<IMongoCollection<Message<T>>> GetCappedCollectionAsync<T>(string collectionName)
         {
             if (await CollectionExistsAsync(collectionName))
             {
-                return _database.Value.GetCollection<RedCappedMessage<T>>(CollectionFullName(collectionName));
+                return _database.Value.GetCollection<Message<T>>(CollectionFullName(collectionName));
             }
 
             return null;

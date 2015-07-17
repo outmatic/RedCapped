@@ -11,14 +11,14 @@ namespace RedCapped.Core.Tests
     {
         private FakeRedCappedQueueManager _sut;
         private IMongoContext _mongoContext;
-        private IMongoCollection<RedCappedMessage<string>> _collection;
+        private IMongoCollection<Message<string>> _collection;
 
         [SetUp]
         public void SetUp()
         {
-            _collection = Substitute.For<IMongoCollection<RedCappedMessage<string>>>();
+            _collection = Substitute.For<IMongoCollection<Message<string>>>();
             _mongoContext = Substitute.For<IMongoContext>();
-            _mongoContext.GetCollectionAsync<string>("anyqueue")
+            _mongoContext.GetCappedCollectionAsync<string>("anyqueue")
                 .Returns(Task.FromResult(_collection));
             _mongoContext.CreateCappedCollectionAsync("anyqueue", 1000)
                 .Returns(Task.FromResult(_collection));
@@ -43,8 +43,8 @@ namespace RedCapped.Core.Tests
         public async void GetQueueAsync_returns_null_for_unexistent_queue()
         {
             // GIVEN
-            _mongoContext.GetCollectionAsync<string>("anyqueue")
-                .Returns(Task.FromResult((IMongoCollection<RedCappedMessage<string>>)null));
+            _mongoContext.GetCappedCollectionAsync<string>("anyqueue")
+                .Returns(Task.FromResult((IMongoCollection<Message<string>>)null));
 
             _sut = new FakeRedCappedQueueManager(_mongoContext);
 

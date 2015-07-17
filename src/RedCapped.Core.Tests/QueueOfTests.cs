@@ -8,7 +8,7 @@ namespace RedCapped.Core.Tests
     public class QueueOfTests
     {
         private IQueueOf<string> _sut;
-        private RedCappedQueueManager _manager;
+        private QueueManager _manager;
 
         public QueueOfTests()
         {
@@ -24,7 +24,7 @@ namespace RedCapped.Core.Tests
         [SetUp]
         public void SetUp()
         {
-            _manager = new RedCappedQueueManager(MongoDbUtils.ConnectionString, MongoDbUtils.DatabaseName);
+            _manager = new QueueManager(MongoDbUtils.ConnectionString, MongoDbUtils.DatabaseName);
             _sut = _manager.CreateQueueAsync<string>("testqueue", 4096).Result;
         }
 
@@ -73,12 +73,10 @@ namespace RedCapped.Core.Tests
         {
             // GIVEN
             const string expected = "hi I'm a message!";
-
             var id = await _sut.PublishAsync("anothertopic", expected);
 
-            string actual = null;
-
             // WHEN
+            string actual = null;
             _sut.Subscribe("anothertopic", m =>
             {
                 actual = m;

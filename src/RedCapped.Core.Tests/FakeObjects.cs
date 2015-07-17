@@ -3,7 +3,7 @@ using MongoDB.Driver;
 
 namespace RedCapped.Core.Tests
 {
-    public class FakeRedCappedQueueManager : RedCappedQueueManager
+    public class FakeRedCappedQueueManager : QueueManager
     {
         public FakeRedCappedQueueManager(IMongoContext mongoContext)
             : base(mongoContext)
@@ -14,7 +14,7 @@ namespace RedCapped.Core.Tests
 
     public class FakeQueueOf<T> : QueueOf<T>
     {
-        public FakeQueueOf(IMongoCollection<RedCappedMessage<T>> collection, IMongoCollection<BsonDocument> safeCollection, IMongoCollection<BsonDocument> errorCollection)
+        public FakeQueueOf(IMongoCollection<Message<T>> collection, IMongoCollection<BsonDocument> safeCollection, IMongoCollection<BsonDocument> errorCollection)
             : base(collection, safeCollection, errorCollection)
         {
 

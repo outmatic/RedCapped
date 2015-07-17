@@ -12,11 +12,11 @@ namespace RedCapped.Core
     public class QueueOf<T> : IQueueOf<T>
     {
         private readonly ConcurrentDictionary<string, CancellationTokenSource> _cancellationTokenList;
-        private readonly IMongoCollection<RedCappedMessage<T>> _collection;
+        private readonly IMongoCollection<Message<T>> _collection;
         private readonly IMongoCollection<BsonDocument> _safeCollection;
         private readonly IMongoCollection<BsonDocument> _errorCollection;
 
-        protected internal QueueOf(IMongoCollection<RedCappedMessage<T>> collection,
+        protected internal QueueOf(IMongoCollection<Message<T>> collection,
             IMongoCollection<BsonDocument> safeCollection,
             IMongoCollection<BsonDocument> errorCollection)
         {
@@ -70,9 +70,9 @@ namespace RedCapped.Core
                 throw new ArgumentException("retryLimit cannot be less than 1", "retryLimit");
             }
 
-            var msg = new RedCappedMessage<T>(message)
+            var msg = new Message<T>(message)
             {
-                Header = new MessageHeader<T>
+                Header = new Header<T>
                 {
                     QoS = qos,
                     SentAt = DateTime.Now,
@@ -85,7 +85,7 @@ namespace RedCapped.Core
             return await PublishAsyncInternal(msg);
         }
 
-        private async Task<string> PublishAsyncInternal(RedCappedMessage<T> message)
+        private async Task<string> PublishAsyncInternal(Message<T> message)
         {
             message.MessageId = ObjectId.GenerateNewId().ToString();
 
@@ -122,11 +122,11 @@ namespace RedCapped.Core
                         {
                             var error = false;
 
-                            RedCappedMessage<T> item = null;
+                            Message<T> item = null;
 
                             try
                             {
-                                item = BsonSerializer.Deserialize<RedCappedMessage<T>>(doc);
+                                item = BsonSerializer.Deserialize<Message<T>>(doc);
                             }
                             catch (Exception)
                             {
@@ -135,7 +135,7 @@ namespace RedCapped.Core
 
                             if (item != null && await AckAsync(item.MessageId))
                             {
-                                if (!handler(item.Message))
+                                if (!handler(item.Payload))
                                 {
                                     if (item.Header.RetryCount < item.Header.RetryLimit)
                                     {
@@ -152,7 +152,7 @@ namespace RedCapped.Core
                                 error = true;
                             }
 
-                            if (error)
+                            if (error && item != null)
                             {
                                 await
                                     _errorCollection.WithWriteConcern(QosToWriteConcern(item.Header.QoS))
@@ -175,7 +175,7 @@ namespace RedCapped.Core
                 Background = true
             };
 
-            await _collection.Indexes.CreateOneAsync(Builders<RedCappedMessage<T>>.IndexKeys
+            await _collection.Indexes.CreateOneAsync(Builders<Message<T>>.IndexKeys
                 .Ascending(x => x.Header.Type)
                 .Ascending(x => x.Header.AcknowledgedAt)
                 .Ascending(x => x.Topic), options);
@@ -186,7 +186,7 @@ namespace RedCapped.Core
             var result = await _collection.UpdateOneAsync(
                 x => x.MessageId == messageId
                      & x.Header.AcknowledgedAt == DateTime.MinValue,
-                Builders<RedCappedMessage<T>>.Update
+                Builders<Message<T>>.Update
                     .Set(x => x.Header.AcknowledgedAt, DateTime.Now)
                     .Inc(x => x.Header.RetryCount, 1)
                 );

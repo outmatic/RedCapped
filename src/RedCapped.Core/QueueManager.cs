@@ -3,16 +3,16 @@ using System.Threading.Tasks;
 
 namespace RedCapped.Core
 {
-    public class RedCappedQueueManager
+    public class QueueManager
     {
         private readonly Lazy<IMongoContext> _mongoContext;
 
-        protected RedCappedQueueManager(IMongoContext mongoContext)
+        protected QueueManager(IMongoContext mongoContext)
         {
             _mongoContext = new Lazy<IMongoContext>(() => mongoContext);
         }
 
-        public RedCappedQueueManager(string connectionString, string dbName)
+        public QueueManager(string connectionString, string dbName)
         {
             _mongoContext = new Lazy<IMongoContext>(() => new MongoContext(connectionString, dbName));
         }
@@ -31,11 +31,16 @@ namespace RedCapped.Core
 
         public async Task<IQueueOf<T>> GetQueueAsync<T>(string queueName) where T : class
         {
-            var queue = await _mongoContext.Value.GetCollectionAsync<T>(queueName);
-            var safeQueue = _mongoContext.Value.GetCollection(queueName);
-            var errorQueue = _mongoContext.Value.GetCollection(string.Format("{0}_err", queueName));
+            var collection = await _mongoContext.Value.GetCappedCollectionAsync<T>(queueName);
+            if (collection == null)
+            {
+                return null;
+            }
+
+            var safeCollection = _mongoContext.Value.GetCollection(queueName);
+            var errorCollection = _mongoContext.Value.GetCollection(string.Format("{0}_err", queueName));
             
-            return queue != null ? new QueueOf<T>(queue, safeQueue, errorQueue) : null;
+            return new QueueOf<T>(collection, safeCollection, errorCollection);
         }
     }
 }
