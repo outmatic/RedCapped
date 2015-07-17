@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 
 namespace RedCapped.Core
@@ -12,12 +13,15 @@ namespace RedCapped.Core
     {
         private readonly ConcurrentDictionary<string, CancellationTokenSource> _cancellationTokenList;
         private readonly IMongoCollection<RedCappedMessage<T>> _collection;
+        private readonly IMongoCollection<BsonDocument> _safeCollection;
         private readonly IMongoCollection<BsonDocument> _errorCollection;
 
         protected internal QueueOf(IMongoCollection<RedCappedMessage<T>> collection,
+            IMongoCollection<BsonDocument> safeCollection,
             IMongoCollection<BsonDocument> errorCollection)
         {
             _collection = collection;
+            _safeCollection = safeCollection;
             _errorCollection = errorCollection;
             _cancellationTokenList = new ConcurrentDictionary<string, CancellationTokenSource>();
             CreateIndex();
@@ -98,24 +102,38 @@ namespace RedCapped.Core
 
             try
             {
-                var findOptions = new FindOptions<RedCappedMessage<T>>
+                var findOptions = new FindOptions<BsonDocument>
                 {
                     CursorType = CursorType.TailableAwait,
                     NoCursorTimeout = true
                 };
 
+                var builder = Builders<BsonDocument>.Filter;
+                var filter = builder.Eq("header.t", typeof(T).ToString())
+                    & builder.Eq("header.ack", DateTime.MinValue)
+                    & builder.Eq("topic", topic);
+
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     using (var cursor = await
-                        _collection.FindAsync(x => x.Header.Type == typeof (T).ToString()
-                                                   & x.Header.AcknowledgedAt == DateTime.MinValue
-                                                   & x.Topic == topic, findOptions, cancellationToken.Token))
+                        _safeCollection.FindAsync(filter, findOptions, cancellationToken.Token))
                     {
-                        await cursor.ForEachAsync(async item =>
+                        await cursor.ForEachAsync(async doc =>
                         {
                             var error = false;
 
-                            if (await AckAsync(item.MessageId))
+                            RedCappedMessage<T> item = null;
+
+                            try
+                            {
+                                item = BsonSerializer.Deserialize<RedCappedMessage<T>>(doc);
+                            }
+                            catch (Exception)
+                            {
+                                Debug.WriteLine("Found an unexpected payload:\n{0}", item.ToJson());
+                            }
+
+                            if (item != null && await AckAsync(item.MessageId))
                             {
                                 if (!handler(item.Message))
                                 {

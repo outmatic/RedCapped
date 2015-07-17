@@ -6,10 +6,20 @@ namespace RedCapped.Core
 {
     public class MessageHeader<T>
     {
-        [BsonElement("_v")]
-        private const string Version = "1";
+        [BsonElement("v")]
+        public string Version
+        {
+            get
+            {
+                return "1";
+            }
+            set
+            {
+                
+            }
+        }
 
-        [BsonElement("_type")]
+        [BsonElement("t")]
         public string Type
         {
             get { return typeof(T).FullName; }

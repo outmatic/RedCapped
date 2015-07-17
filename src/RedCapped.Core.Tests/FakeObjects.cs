@@ -14,8 +14,8 @@ namespace RedCapped.Core.Tests
 
     public class FakeQueueOf<T> : QueueOf<T>
     {
-        public FakeQueueOf(IMongoCollection<RedCappedMessage<T>> collection, IMongoCollection<BsonDocument> errorCollection)
-            : base(collection, errorCollection)
+        public FakeQueueOf(IMongoCollection<RedCappedMessage<T>> collection, IMongoCollection<BsonDocument> safeCollection, IMongoCollection<BsonDocument> errorCollection)
+            : base(collection, safeCollection, errorCollection)
         {
 
         }
