@@ -60,6 +60,7 @@
     <Compile Include="IMongoContext.cs" />
     <Compile Include="IQueueOf.cs" />
     <Compile Include="MongoContext.cs" />
+    <Compile Include="QoS.cs" />
     <Compile Include="QueueOf.cs" />
     <Compile Include="RedCappedMessage.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

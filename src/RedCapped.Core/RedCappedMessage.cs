@@ -15,18 +15,21 @@ namespace RedCapped.Core
             get { return typeof(T).FullName; }
         }
 
+        [BsonElement("qos")]
+        public QoS QoS { get; set; }
+
         [BsonElement("sent")]
         public DateTime SentAt { get; set; }
 
         [BsonElement("ack")]
         public DateTime AcknowledgedAt { get; set; }
 
-        [BsonElement("receive-limit")]
+        [BsonElement("retry-limit")]
         [BsonIgnoreIfDefault]
-        public int ReceiveLimit { get; set; }
+        public int RetryLimit { get; set; }
 
-        [BsonElement("receive-attempts")]
-        public int ReceiveAttempts { get; set; }
+        [BsonElement("retry-count")]
+        public int RetryCount { get; set; }
     }
 
     public class RedCappedMessage<T>

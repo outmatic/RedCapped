@@ -33,6 +33,16 @@ namespace RedCapped.Core.Tests
         }
 
         [Test]
+        public async void PublishAsync_can_publish_a_message_with_different_qos()
+        {
+            // WHEN
+            var actual = await _sut.PublishAsync("anytopic", "hi!", qos: QoS.High);
+
+            // THEN
+            Assert.That(actual, Is.Not.Null);
+        }
+
+        [Test]
         public void PublishAsync_throws_when_no_topic()
         {
             Assert.Throws<ArgumentNullException>(async () => await _sut.PublishAsync("", "hi!"));
@@ -58,12 +68,12 @@ namespace RedCapped.Core.Tests
             // GIVEN
             const string expected = "hi I'm a message!";
 
-            var id = await _sut.PublishAsync("anytopic", expected);
+            var id = await _sut.PublishAsync("anothertopic", expected);
 
             string actual = null;
 
             // WHEN
-            _sut.Subscribe("anytopic", m =>
+            _sut.Subscribe("anothertopic", m =>
             {
                 actual = m;
                 return true;

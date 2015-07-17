@@ -14,15 +14,16 @@ namespace RedCapped.Core
         private readonly IMongoCollection<RedCappedMessage<T>> _collection;
         private readonly IMongoCollection<BsonDocument> _errorCollection;
 
-        public bool Subscribed { get; private set; }
-
-        protected internal QueueOf(IMongoCollection<RedCappedMessage<T>> collection, IMongoCollection<BsonDocument> errorCollection)
+        protected internal QueueOf(IMongoCollection<RedCappedMessage<T>> collection,
+            IMongoCollection<BsonDocument> errorCollection)
         {
             _collection = collection;
             _errorCollection = errorCollection;
             _cancellationTokenList = new ConcurrentDictionary<string, CancellationTokenSource>();
             CreateIndex();
         }
+
+        public bool Subscribed { get; private set; }
 
         public void Subscribe(string topic, Func<T, bool> handler)
         {
@@ -34,56 +35,6 @@ namespace RedCapped.Core
             Subscribed = true;
 
             Task.Factory.StartNew((() => SubscribeInternal(topic, handler)), TaskCreationOptions.LongRunning);
-        }
-
-        private async Task SubscribeInternal(string topic, Func<T, bool> handler)
-        {
-            var cancellationToken = new CancellationTokenSource();
-            _cancellationTokenList[topic] = cancellationToken;
-
-            try
-            {
-                var findOptions = new FindOptions<RedCappedMessage<T>>
-                {
-                    CursorType = CursorType.TailableAwait,
-                    NoCursorTimeout = true
-                };
-
-                while (!cancellationToken.IsCancellationRequested)
-                {
-                    using (var cursor = await
-                        _collection.FindAsync(x => x.Header.Type == typeof(T).ToString()
-                                                   & x.Header.AcknowledgedAt == DateTime.MinValue
-                                                   & x.Topic == topic, findOptions, cancellationToken.Token))
-                    {
-                        await cursor.ForEachAsync(async item =>
-                        {
-                            if (await AckAsync(item.MessageId))
-                            {
-                                if (!handler(item.Message))
-                                {
-                                    if (item.Header.ReceiveAttempts < item.Header.ReceiveLimit)
-                                    {
-                                        await PublishAsync(item.Topic, item.Message);
-                                    }
-                                    else
-                                    {
-                                        await _errorCollection.InsertOneAsync(item.ToBsonDocument(), cancellationToken.Token);
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                await _errorCollection.InsertOneAsync(item.ToBsonDocument(), cancellationToken.Token);
-                            }
-                        }, cancellationToken.Token);
-                    }
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                Debug.WriteLine("Cancellation Requested");
-            }
         }
 
         public void Unsubscribe(string topic)
@@ -103,33 +54,100 @@ namespace RedCapped.Core
             t.Cancel();
         }
 
-        public async Task<string> PublishAsync(string topic, T message, int receiveLimit = 3)
+        public async Task<string> PublishAsync(string topic, T message, int retryLimit = 3, QoS qos = QoS.Normal)
         {
             if (string.IsNullOrWhiteSpace(topic))
             {
                 throw new ArgumentNullException("topic");
             }
 
-            if (receiveLimit < 1)
+            if (retryLimit < 1)
             {
-                throw new ArgumentException("receiveLimit cannot be less than 1", "receiveLimit");
+                throw new ArgumentException("retryLimit cannot be less than 1", "retryLimit");
             }
 
             var msg = new RedCappedMessage<T>(message)
             {
-                MessageId = ObjectId.GenerateNewId().ToString(),
                 Header = new MessageHeader<T>
                 {
+                    QoS = qos,
                     SentAt = DateTime.Now,
                     AcknowledgedAt = DateTime.MinValue,
-                    ReceiveLimit = receiveLimit
+                    RetryLimit = retryLimit
                 },
                 Topic = topic
             };
 
-            await _collection.InsertOneAsync(msg);
+            return await PublishAsyncInternal(msg);
+        }
 
-            return msg.MessageId;
+        private async Task<string> PublishAsyncInternal(RedCappedMessage<T> message)
+        {
+            message.MessageId = ObjectId.GenerateNewId().ToString();
+
+            await
+                _collection.WithWriteConcern(QosToWriteConcern(message.Header.QoS)).InsertOneAsync(message);
+
+            return message.MessageId;
+        }
+
+        private async Task SubscribeInternal(string topic, Func<T, bool> handler)
+        {
+            var cancellationToken = new CancellationTokenSource();
+            _cancellationTokenList[topic] = cancellationToken;
+
+            try
+            {
+                var findOptions = new FindOptions<RedCappedMessage<T>>
+                {
+                    CursorType = CursorType.TailableAwait,
+                    NoCursorTimeout = true
+                };
+
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    using (var cursor = await
+                        _collection.FindAsync(x => x.Header.Type == typeof (T).ToString()
+                                                   & x.Header.AcknowledgedAt == DateTime.MinValue
+                                                   & x.Topic == topic, findOptions, cancellationToken.Token))
+                    {
+                        await cursor.ForEachAsync(async item =>
+                        {
+                            var error = false;
+
+                            if (await AckAsync(item.MessageId))
+                            {
+                                if (!handler(item.Message))
+                                {
+                                    if (item.Header.RetryCount < item.Header.RetryLimit)
+                                    {
+                                        await PublishAsyncInternal(item);
+                                    }
+                                    else
+                                    {
+                                        error = true;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                error = true;
+                            }
+
+                            if (error)
+                            {
+                                await
+                                    _errorCollection.WithWriteConcern(QosToWriteConcern(item.Header.QoS))
+                                        .InsertOneAsync(item.ToBsonDocument(), cancellationToken.Token);
+                            }
+                        }, cancellationToken.Token);
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                Debug.WriteLine("Cancellation Requested");
+            }
         }
 
         private async void CreateIndex()
@@ -152,10 +170,30 @@ namespace RedCapped.Core
                      & x.Header.AcknowledgedAt == DateTime.MinValue,
                 Builders<RedCappedMessage<T>>.Update
                     .Set(x => x.Header.AcknowledgedAt, DateTime.Now)
-                    .Inc(x => x.Header.ReceiveAttempts, 1)
+                    .Inc(x => x.Header.RetryCount, 1)
                 );
 
             return result.MatchedCount == 1 && result.ModifiedCount == 1;
+        }
+
+        private static WriteConcern QosToWriteConcern(QoS qos)
+        {
+            WriteConcern w;
+
+            switch (qos)
+            {
+                default:
+                    w = WriteConcern.Acknowledged;
+                    break;
+                case QoS.Low:
+                    w = WriteConcern.Unacknowledged;
+                    break;
+                case QoS.High:
+                    w = WriteConcern.WMajority;
+                    break;
+            }
+
+            return w;
         }
     }
 }
