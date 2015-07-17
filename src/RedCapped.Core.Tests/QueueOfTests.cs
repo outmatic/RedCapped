@@ -15,6 +15,12 @@ namespace RedCapped.Core.Tests
             MongoDbUtils.DropDatabase();
         }
 
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            MongoDbUtils.DropDatabase();
+        }
+
         [SetUp]
         public void SetUp()
         {
