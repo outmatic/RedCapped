@@ -13,10 +13,6 @@ namespace RedCapped.Core
             {
                 return "1";
             }
-            set
-            {
-                
-            }
         }
 
         [BsonElement("t")]
