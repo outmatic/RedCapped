@@ -48,6 +48,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Extensions\ExtensionMethods.cs" />
     <Compile Include="Header.cs" />
     <Compile Include="IMongoContext.cs" />
     <Compile Include="IQueueOf.cs" />
@@ -56,7 +57,7 @@
     <Compile Include="QueueOf.cs" />
     <Compile Include="Message.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="QueueManager.cs" />
+    <Compile Include="QueueFactory.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

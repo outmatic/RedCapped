@@ -8,7 +8,7 @@ namespace RedCapped.Core.Tests
     public class QueueOfTests
     {
         private IQueueOf<string> _sut;
-        private QueueManager _manager;
+        private QueueFactory _manager;
 
         public QueueOfTests()
         {
@@ -18,13 +18,13 @@ namespace RedCapped.Core.Tests
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
-            MongoDbUtils.DropDatabase();
+            //MongoDbUtils.DropDatabase();
         }
 
         [SetUp]
         public void SetUp()
         {
-            _manager = new QueueManager(MongoDbUtils.ConnectionString, MongoDbUtils.DatabaseName);
+            _manager = new QueueFactory(MongoDbUtils.ConnectionString, MongoDbUtils.DatabaseName);
             _sut = _manager.CreateQueueAsync<string>("testqueue", 4096).Result;
         }
 

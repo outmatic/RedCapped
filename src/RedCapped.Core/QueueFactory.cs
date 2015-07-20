@@ -3,16 +3,16 @@ using System.Threading.Tasks;
 
 namespace RedCapped.Core
 {
-    public class QueueManager
+    public class QueueFactory
     {
         private readonly Lazy<IMongoContext> _mongoContext;
 
-        protected QueueManager(IMongoContext mongoContext)
+        protected QueueFactory(IMongoContext mongoContext)
         {
             _mongoContext = new Lazy<IMongoContext>(() => mongoContext);
         }
 
-        public QueueManager(string connectionString, string dbName)
+        public QueueFactory(string connectionString, string dbName)
         {
             _mongoContext = new Lazy<IMongoContext>(() => new MongoContext(connectionString, dbName));
         }
@@ -40,7 +40,7 @@ namespace RedCapped.Core
             var safeCollection = _mongoContext.Value.GetCollection(queueName);
             var errorCollection = _mongoContext.Value.GetCollection(string.Format("{0}_err", queueName));
             
-            return new QueueOf<T>(collection, safeCollection, errorCollection);
+            return new QueueOf<T>(safeCollection, errorCollection);
         }
     }
 }

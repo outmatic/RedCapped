@@ -6,19 +6,10 @@ namespace RedCapped.Core
     public class Header<T>
     {
         [BsonElement("v")]
-        public string Version
-        {
-            get
-            {
-                return "1";
-            }
-        }
+        public string Version => "1";
 
         [BsonElement("t")]
-        public string Type
-        {
-            get { return typeof(T).FullName; }
-        }
+        public string Type => typeof(T).FullName;
 
         [BsonElement("qos")]
         public QoS QoS { get; set; }

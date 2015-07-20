@@ -7,9 +7,9 @@ using RedCapped.Core.Tests.Extensions;
 namespace RedCapped.Core.Tests
 {
     [TestFixture]
-    public class RedCappedQueueManagerUnitTests
+    public class QueueFactoryUnitTests
     {
-        private FakeRedCappedQueueManager _sut;
+        private FakeQueueFactory _sut;
         private IMongoContext _mongoContext;
         private IMongoCollection<Message<string>> _collection;
 
@@ -30,7 +30,7 @@ namespace RedCapped.Core.Tests
             // GIVEN
             var expected = typeof(IQueueOf<string>);
 
-            _sut = new FakeRedCappedQueueManager(_mongoContext);
+            _sut = new FakeQueueFactory(_mongoContext);
 
             // WHEN
             var actual = await _sut.GetQueueAsync<string>("anyqueue");
@@ -46,7 +46,7 @@ namespace RedCapped.Core.Tests
             _mongoContext.GetCappedCollectionAsync<string>("anyqueue")
                 .Returns(Task.FromResult((IMongoCollection<Message<string>>)null));
 
-            _sut = new FakeRedCappedQueueManager(_mongoContext);
+            _sut = new FakeQueueFactory(_mongoContext);
 
             // WHEN
             var actual = await _sut.GetQueueAsync<string>("anyqueue");
@@ -64,7 +64,7 @@ namespace RedCapped.Core.Tests
             _mongoContext.CollectionExistsAsync("anyqueue")
                 .Returns(Task.FromResult(false));
 
-            _sut = new FakeRedCappedQueueManager(_mongoContext);
+            _sut = new FakeQueueFactory(_mongoContext);
 
             // WHEN
             var actual = await _sut.CreateQueueAsync<string>("anyqueue", 1000);
@@ -83,7 +83,7 @@ namespace RedCapped.Core.Tests
             _mongoContext.CollectionExistsAsync("anyqueue")
                 .Returns(Task.FromResult(true));
 
-            _sut = new FakeRedCappedQueueManager(_mongoContext);
+            _sut = new FakeQueueFactory(_mongoContext);
 
             // WHEN
             var actual = await _sut.CreateQueueAsync<string>("anyqueue", 1000);

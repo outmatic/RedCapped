@@ -60,7 +60,7 @@
     <Compile Include="FakeObjects.cs" />
     <Compile Include="MongoDbUtils.cs" />
     <Compile Include="QueueOfTests.cs" />
-    <Compile Include="RedCappedQueueManagerUnitTests.cs" />
+    <Compile Include="QueueFactoryUnitTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

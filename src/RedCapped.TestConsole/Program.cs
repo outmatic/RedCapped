@@ -19,7 +19,7 @@ namespace RedCapped.TestConsole
 
         static async void MainAsync(string[] args)
         {
-            var m = new QueueManager("mongodb://localhost", "redcappedtest");
+            var m = new QueueFactory("mongodb://localhost", "redcappedtest");
             var q = await m.CreateQueueAsync<string>("test", 64*1024*1024);
 
             await PublishMessages(q, QoS.Low, 10);
