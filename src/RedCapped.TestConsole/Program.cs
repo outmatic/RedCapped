@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using RedCapped.Core;
+using static System.Console;
 
 namespace RedCapped.TestConsole
 {
@@ -11,10 +12,10 @@ namespace RedCapped.TestConsole
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Starting tests:");
-            Console.WriteLine();
+            WriteLine("Starting tests:");
+            WriteLine();
             Task.Run(() => MainAsync(args)).Wait();
-            Console.ReadKey();
+            ReadKey();
         }
 
         static async void MainAsync(string[] args)
@@ -26,7 +27,7 @@ namespace RedCapped.TestConsole
             await PublishMessages(q, QoS.Normal, 10);
             await PublishMessages(q, QoS.High, 10);
 
-            Console.WriteLine("Press any key to exit.");
+            WriteLine("Press any key to exit.");
         }
 
         private static async Task PublishMessages(IQueueOf<string> queue, QoS qos, int passes)
@@ -36,7 +37,7 @@ namespace RedCapped.TestConsole
 
             for (var i = 1; i <= passes; i++)
             {
-                Console.Write("Publishing 1000 messages ({0} QoS), pass {1}/{2} -> ", qos.ToString(), i, passes);
+                Write("Publishing 1000 messages ({0} QoS), pass {1}/{2} -> ", qos.ToString(), i, passes);
                 watch.Restart();
 
                 for (var j = 0; j < 1000; j++)
@@ -45,14 +46,14 @@ namespace RedCapped.TestConsole
                 }
                 watch.Stop();
                 counters.Add(watch.ElapsedMilliseconds);
-                Console.WriteLine(watch.ElapsedMilliseconds);
+                WriteLine(watch.ElapsedMilliseconds);
             }
 
             var average = counters.Sum() / passes;
 
-            Console.WriteLine("Average time (ms): {0}", average);
-            Console.WriteLine("Average rate (msg/s): {0}", Math.Truncate(decimal.Divide(1000, average) * 1000));
-            Console.WriteLine();            
+            WriteLine("Average time (ms): {0}", average);
+            WriteLine("Average rate (msg/s): {0}", Math.Truncate(decimal.Divide(1000, average) * 1000));
+            WriteLine();            
         }
     }
 }
