@@ -17,7 +17,7 @@ namespace RedCapped.Core
 
         private static string CollectionFullName(string collectionName)
         {
-            return string.Format("{0}.{1}", Prefix, collectionName);
+            return $"{Prefix}.{collectionName}";
         }
 
         public MongoContext(string connectionString, string dbName, CancellationToken cancellationToken = default(CancellationToken))
