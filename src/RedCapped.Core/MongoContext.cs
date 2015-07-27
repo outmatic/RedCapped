@@ -46,7 +46,7 @@ namespace RedCapped.Core
             }
         }
 
-        public async Task CreateCappedCollectionAsync(string collectionName, int maxSize)
+        public async Task CreateCappedCollectionAsync(string collectionName, long maxSize)
         {
             var collectionOptions = new CreateCollectionOptions
             {
