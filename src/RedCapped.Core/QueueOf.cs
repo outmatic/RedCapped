@@ -109,7 +109,7 @@ namespace RedCapped.Core
 
                 var builder = Builders<BsonDocument>.Filter;
                 var filter = builder.Eq("h.t", typeof (T).ToString())
-                             & builder.Eq("h.ack", DateTime.MinValue)
+                             & builder.Eq("h.a", DateTime.MinValue)
                              & builder.Eq("t", topic);
 
                 while (!cancellationToken.IsCancellationRequested)
@@ -164,7 +164,7 @@ namespace RedCapped.Core
 
             var builder = Builders<BsonDocument>.IndexKeys;
             var indexKeys = builder.Ascending("h.t")
-                .Ascending("h.ack")
+                .Ascending("h.a")
                 .Ascending("t");
 
             await _collection.Indexes.CreateOneAsync(indexKeys, options);
@@ -175,10 +175,10 @@ namespace RedCapped.Core
             var builder = Builders<BsonDocument>.Filter;
             var filter = builder
                 .Eq("_id", ObjectId.Parse(message.MessageId))
-                         & builder.Eq("h.ack", DateTime.MinValue);
+                         & builder.Eq("h.a", DateTime.MinValue);
             var update = Builders<BsonDocument>.Update
-                .Set("h.ack", DateTime.Now)
-                .Inc("h.rc", 1);
+                .Set("h.a", DateTime.Now)
+                .Inc("h.c", 1);
 
             var result =
                 await _collection.WithWriteConcern(message.Header.QoS.ToWriteConcern()).UpdateOneAsync(filter, update);

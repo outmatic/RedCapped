@@ -11,20 +11,20 @@ namespace RedCapped.Core
         [BsonElement("t")]
         public string Type => typeof(T).FullName;
 
-        [BsonElement("qos")]
+        [BsonElement("q")]
         public QoS QoS { get; set; }
 
-        [BsonElement("sent")]
+        [BsonElement("s")]
         public DateTime SentAt { get; set; }
 
-        [BsonElement("ack")]
+        [BsonElement("a")]
         public DateTime AcknowledgedAt { get; set; }
 
-        [BsonElement("rl")]
+        [BsonElement("l")]
         [BsonIgnoreIfDefault]
         public int RetryLimit { get; set; }
 
-        [BsonElement("rc")]
+        [BsonElement("c")]
         public int RetryCount { get; set; }
     }
 }
