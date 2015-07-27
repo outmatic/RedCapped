@@ -88,7 +88,8 @@ namespace RedCapped.Core
             message.MessageId = ObjectId.GenerateNewId().ToString();
 
             await
-                _collection.WithWriteConcern(message.Header.QoS.ToWriteConcern()).InsertOneAsync(message.ToBsonDocument());
+                _collection.WithWriteConcern(message.Header.QoS.ToWriteConcern())
+                    .InsertOneAsync(message.ToBsonDocument());
 
             return message.MessageId;
         }
@@ -107,9 +108,9 @@ namespace RedCapped.Core
                 };
 
                 var builder = Builders<BsonDocument>.Filter;
-                var filter = builder.Eq("header.t", typeof(T).ToString())
-                    & builder.Eq("header.ack", DateTime.MinValue)
-                    & builder.Eq("topic", topic);
+                var filter = builder.Eq("header.t", typeof (T).ToString())
+                             & builder.Eq("header.ack", DateTime.MinValue)
+                             & builder.Eq("topic", topic);
 
                 while (!cancellationToken.IsCancellationRequested)
                 {
@@ -174,17 +175,13 @@ namespace RedCapped.Core
             var builder = Builders<BsonDocument>.Filter;
             var filter = builder
                 .Eq("_id", ObjectId.Parse(message.MessageId))
-                & builder.Eq("header.ack", DateTime.MinValue);
+                         & builder.Eq("header.ack", DateTime.MinValue);
             var update = Builders<BsonDocument>.Update
                 .Set("header.ack", DateTime.Now)
                 .Inc("header.retry-count", 1);
 
-            var result = await _collection.WithWriteConcern(message.Header.QoS.ToWriteConcern()).UpdateOneAsync(filter, update);
-
-            if (!result.IsAcknowledged)
-            {
-                return true;
-            }
+            var result =
+                await _collection.WithWriteConcern(message.Header.QoS.ToWriteConcern()).UpdateOneAsync(filter, update);
 
             return result.MatchedCount == 1 && result.ModifiedCount == 1;
         }
