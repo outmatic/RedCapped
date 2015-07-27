@@ -32,9 +32,6 @@ namespace RedCapped.Core
             {
                 throw new ArgumentNullException(nameof(topic));
             }
-
-            Subscribed = true;
-
             Task.Factory.StartNew((() => SubscribeInternal(topic, handler)), TaskCreationOptions.LongRunning);
         }
 
@@ -113,6 +110,8 @@ namespace RedCapped.Core
 
                 while (!cancellationToken.IsCancellationRequested)
                 {
+                    Subscribed = true;
+
                     using (var cursor = await
                         _collection.FindAsync(filter, findOptions, cancellationToken.Token))
                     {
@@ -147,6 +146,8 @@ namespace RedCapped.Core
                         }, cancellationToken.Token);
                     }
                 }
+
+                Subscribed = false;
             }
             catch (OperationCanceledException)
             {
