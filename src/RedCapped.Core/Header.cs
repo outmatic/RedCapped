@@ -5,9 +5,6 @@ namespace RedCapped.Core
 {
     public class Header<T>
     {
-        [BsonElement("v")]
-        public string Version => "1";
-
         [BsonElement("t")]
         public string Type => typeof(T).FullName;
 
