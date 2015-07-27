@@ -48,14 +48,28 @@ namespace RedCapped.Core
 
         public async Task CreateCappedCollectionAsync(string collectionName, int maxSize)
         {
-            var opt = new CreateCollectionOptions
+            var collectionOptions = new CreateCollectionOptions
             {
                 Capped = true,
                 AutoIndexId = true,
                 MaxSize = maxSize > CollectionMaxSize ? maxSize : CollectionMaxSize
             };
 
-            await _database.Value.CreateCollectionAsync(CollectionFullName(collectionName), opt, _cancellationToken);
+            await _database.Value.CreateCollectionAsync(CollectionFullName(collectionName), collectionOptions, _cancellationToken);
+
+            var collection = _database.Value.GetCollection<BsonDocument>(CollectionFullName(collectionName));
+
+            var indexOptions = new CreateIndexOptions
+            {
+                Background = true
+            };
+
+            var builder = Builders<BsonDocument>.IndexKeys;
+            var indexKeys = builder.Ascending("h.t")
+                .Ascending("h.a")
+                .Ascending("t");
+
+            await collection.Indexes.CreateOneAsync(indexKeys, indexOptions, _cancellationToken);
         }
 
         public async Task<IMongoCollection<BsonDocument>> GetCollectionAsync<T>(string collectionName, bool checkExists)

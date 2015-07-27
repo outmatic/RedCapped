@@ -22,7 +22,6 @@ namespace RedCapped.Core
             _collection = collection;
             _errorCollection = errorCollection;
             _cancellationTokenList = new ConcurrentDictionary<string, CancellationTokenSource>();
-            CreateIndex();
         }
 
         public bool Subscribed { get; private set; }
@@ -153,21 +152,6 @@ namespace RedCapped.Core
             {
                 Debug.WriteLine("Cancellation Requested");
             }
-        }
-
-        private async void CreateIndex()
-        {
-            var options = new CreateIndexOptions
-            {
-                Background = true
-            };
-
-            var builder = Builders<BsonDocument>.IndexKeys;
-            var indexKeys = builder.Ascending("h.t")
-                .Ascending("h.a")
-                .Ascending("t");
-
-            await _collection.Indexes.CreateOneAsync(indexKeys, options);
         }
 
         private async Task<bool> AckAsync(Message<T> message)
