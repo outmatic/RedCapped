@@ -146,11 +146,11 @@ namespace RedCapped.Core
                         }, cancellationToken.Token);
                     }
                 }
-
-                Subscribed = false;
             }
             catch (OperationCanceledException)
             {
+                Subscribed = false;
+
                 Debug.WriteLine("Cancellation Requested");
             }
         }
