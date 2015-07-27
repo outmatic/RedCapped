@@ -21,7 +21,6 @@ namespace RedCapped.Core
         public DateTime AcknowledgedAt { get; set; }
 
         [BsonElement("l")]
-        [BsonIgnoreIfDefault]
         public int RetryLimit { get; set; }
 
         [BsonElement("c")]
