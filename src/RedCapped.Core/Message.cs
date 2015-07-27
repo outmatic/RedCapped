@@ -1,5 +1,4 @@
-﻿using System;
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace RedCapped.Core
@@ -16,13 +15,13 @@ namespace RedCapped.Core
         [BsonRepresentation(BsonType.ObjectId)]
         public string MessageId { get; set; }
 
-        [BsonElement("header")]
+        [BsonElement("h")]
         public Header<T> Header { get; set; }
 
-        [BsonElement("topic")]
+        [BsonElement("t")]
         public string Topic { get; set; }
 
-        [BsonElement("payload")]
+        [BsonElement("p")]
         public T Payload { get; set; }
     }
 }

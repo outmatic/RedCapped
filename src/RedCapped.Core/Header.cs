@@ -20,11 +20,11 @@ namespace RedCapped.Core
         [BsonElement("ack")]
         public DateTime AcknowledgedAt { get; set; }
 
-        [BsonElement("retry-limit")]
+        [BsonElement("rl")]
         [BsonIgnoreIfDefault]
         public int RetryLimit { get; set; }
 
-        [BsonElement("retry-count")]
+        [BsonElement("rc")]
         public int RetryCount { get; set; }
     }
 }

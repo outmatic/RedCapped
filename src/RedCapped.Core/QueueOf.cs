@@ -108,9 +108,9 @@ namespace RedCapped.Core
                 };
 
                 var builder = Builders<BsonDocument>.Filter;
-                var filter = builder.Eq("header.t", typeof (T).ToString())
-                             & builder.Eq("header.ack", DateTime.MinValue)
-                             & builder.Eq("topic", topic);
+                var filter = builder.Eq("h.t", typeof (T).ToString())
+                             & builder.Eq("h.ack", DateTime.MinValue)
+                             & builder.Eq("t", topic);
 
                 while (!cancellationToken.IsCancellationRequested)
                 {
@@ -163,9 +163,9 @@ namespace RedCapped.Core
             };
 
             var builder = Builders<BsonDocument>.IndexKeys;
-            var indexKeys = builder.Ascending("header.t")
-                .Ascending("header.ack")
-                .Ascending("topic");
+            var indexKeys = builder.Ascending("h.t")
+                .Ascending("h.ack")
+                .Ascending("t");
 
             await _collection.Indexes.CreateOneAsync(indexKeys, options);
         }
@@ -175,10 +175,10 @@ namespace RedCapped.Core
             var builder = Builders<BsonDocument>.Filter;
             var filter = builder
                 .Eq("_id", ObjectId.Parse(message.MessageId))
-                         & builder.Eq("header.ack", DateTime.MinValue);
+                         & builder.Eq("h.ack", DateTime.MinValue);
             var update = Builders<BsonDocument>.Update
-                .Set("header.ack", DateTime.Now)
-                .Inc("header.retry-count", 1);
+                .Set("h.ack", DateTime.Now)
+                .Inc("h.rc", 1);
 
             var result =
                 await _collection.WithWriteConcern(message.Header.QoS.ToWriteConcern()).UpdateOneAsync(filter, update);
