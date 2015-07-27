@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using MongoDB.Bson;
 
 namespace RedCapped.Core
 {
@@ -31,16 +32,16 @@ namespace RedCapped.Core
 
         public async Task<IQueueOf<T>> GetQueueAsync<T>(string queueName) where T : class
         {
-            var collection = await _mongoContext.Value.GetCappedCollectionAsync<T>(queueName);
+            var collection = await _mongoContext.Value.GetCollectionAsync<BsonDocument>(queueName, true);
+
             if (collection == null)
             {
                 return null;
             }
 
-            var safeCollection = _mongoContext.Value.GetCollection(queueName);
-            var errorCollection = _mongoContext.Value.GetCollection(string.Format("{0}_err", queueName));
+            var errorCollection = await _mongoContext.Value.GetCollectionAsync<BsonDocument>(string.Format("{0}_err", queueName), false);
             
-            return new QueueOf<T>(safeCollection, errorCollection);
+            return new QueueOf<T>(collection, errorCollection);
         }
     }
 }

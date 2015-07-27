@@ -8,7 +8,6 @@ namespace RedCapped.Core
     {
         Task<bool> CollectionExistsAsync(string collectionName);
         Task CreateCappedCollectionAsync(string collectionName, int maxSize);
-        Task<IMongoCollection<Message<T>>> GetCappedCollectionAsync<T>(string collectionName);
-        IMongoCollection<BsonDocument> GetCollection(string collectionName);
+        Task<IMongoCollection<BsonDocument>> GetCollectionAsync<T>(string collectionName, bool checkExists);
     }
 }

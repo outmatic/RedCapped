@@ -58,19 +58,14 @@ namespace RedCapped.Core
             await _database.Value.CreateCollectionAsync(CollectionFullName(collectionName), opt, _cancellationToken);
         }
 
-        public async Task<IMongoCollection<Message<T>>> GetCappedCollectionAsync<T>(string collectionName)
+        public async Task<IMongoCollection<BsonDocument>> GetCollectionAsync<T>(string collectionName, bool checkExists)
         {
-            if (await CollectionExistsAsync(collectionName))
+            if (!checkExists || await CollectionExistsAsync(collectionName))
             {
-                return _database.Value.GetCollection<Message<T>>(CollectionFullName(collectionName));
+                return _database.Value.GetCollection<BsonDocument>(CollectionFullName(collectionName));
             }
 
             return null;
-        }
-
-        public IMongoCollection<BsonDocument> GetCollection(string collectionName)
-        {
-            return _database.Value.GetCollection<BsonDocument>(CollectionFullName(collectionName));
         }
     }
 }

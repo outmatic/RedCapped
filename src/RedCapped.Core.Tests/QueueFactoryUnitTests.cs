@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using NSubstitute;
 using NUnit.Framework;
@@ -11,14 +12,14 @@ namespace RedCapped.Core.Tests
     {
         private FakeQueueFactory _sut;
         private IMongoContext _mongoContext;
-        private IMongoCollection<Message<string>> _collection;
+        private IMongoCollection<BsonDocument> _collection;
 
         [SetUp]
         public void SetUp()
         {
-            _collection = Substitute.For<IMongoCollection<Message<string>>>();
+            _collection = Substitute.For<IMongoCollection<BsonDocument>>();
             _mongoContext = Substitute.For<IMongoContext>();
-            _mongoContext.GetCappedCollectionAsync<string>("anyqueue")
+            _mongoContext.GetCollectionAsync<BsonDocument>("anyqueue", true)
                 .Returns(Task.FromResult(_collection));
             _mongoContext.CreateCappedCollectionAsync("anyqueue", 1000)
                 .Returns(Task.FromResult(_collection));
@@ -43,8 +44,8 @@ namespace RedCapped.Core.Tests
         public async void GetQueueAsync_returns_null_for_unexistent_queue()
         {
             // GIVEN
-            _mongoContext.GetCappedCollectionAsync<string>("anyqueue")
-                .Returns(Task.FromResult((IMongoCollection<Message<string>>)null));
+            _mongoContext.GetCollectionAsync<BsonDocument>("anyqueue", true)
+                .Returns(Task.FromResult((IMongoCollection<BsonDocument>)null));
 
             _sut = new FakeQueueFactory(_mongoContext);
 
