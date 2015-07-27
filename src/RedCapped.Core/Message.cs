@@ -18,9 +18,6 @@ namespace RedCapped.Core
         [BsonElement("h")]
         public Header<T> Header { get; set; }
 
-        [BsonElement("t")]
-        public string Topic { get; set; }
-
         [BsonElement("p")]
         public T Payload { get; set; }
     }

@@ -66,8 +66,7 @@ namespace RedCapped.Core
 
             var builder = Builders<BsonDocument>.IndexKeys;
             var indexKeys = builder.Ascending("h.t")
-                .Ascending("h.a")
-                .Ascending("t");
+                .Ascending("h.a");
 
             await collection.Indexes.CreateOneAsync(indexKeys, indexOptions, _cancellationToken);
         }

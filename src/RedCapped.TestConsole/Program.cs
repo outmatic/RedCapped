@@ -42,7 +42,7 @@ namespace RedCapped.TestConsole
 
                 for (var j = 0; j < 1000; j++)
                 {
-                    await queue.PublishAsync("test", j.ToString(), qos: qos);
+                    await queue.PublishAsync(j.ToString(), qos: qos);
                 }
                 watch.Stop();
                 counters.Add(watch.ElapsedMilliseconds);

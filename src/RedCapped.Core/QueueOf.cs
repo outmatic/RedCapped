@@ -12,7 +12,7 @@ namespace RedCapped.Core
 {
     public class QueueOf<T> : IQueueOf<T>
     {
-        private readonly ConcurrentDictionary<string, CancellationTokenSource> _cancellationTokenList;
+        private CancellationTokenSource _cancellationTokenSource;
         private readonly IMongoCollection<BsonDocument> _collection;
         private readonly IMongoCollection<BsonDocument> _errorCollection;
 
@@ -21,44 +21,23 @@ namespace RedCapped.Core
         {
             _collection = collection;
             _errorCollection = errorCollection;
-            _cancellationTokenList = new ConcurrentDictionary<string, CancellationTokenSource>();
         }
 
         public bool Subscribed { get; private set; }
 
-        public void Subscribe(string topic, Func<T, bool> handler)
+        public void Subscribe(Func<T, bool> handler)
         {
-            if (string.IsNullOrWhiteSpace(topic))
-            {
-                throw new ArgumentNullException(nameof(topic));
-            }
-            Task.Factory.StartNew((() => SubscribeInternal(topic, handler)), TaskCreationOptions.LongRunning);
+            Task.Factory.StartNew((() => SubscribeInternal(handler)), TaskCreationOptions.LongRunning);
         }
 
-        public void Unsubscribe(string topic)
+        public void Unsubscribe()
         {
-            if (string.IsNullOrWhiteSpace(topic))
-            {
-                throw new ArgumentNullException(nameof(topic));
-            }
-
-            CancellationTokenSource t;
-            if (!_cancellationTokenList.TryRemove(topic, out t))
-            {
-                return;
-            }
-
+            _cancellationTokenSource?.Cancel();
             Subscribed = false;
-            t.Cancel();
         }
 
-        public async Task<string> PublishAsync(string topic, T message, int retryLimit = 3, QoS qos = QoS.Normal)
+        public async Task<string> PublishAsync(T message, int retryLimit = 3, QoS qos = QoS.Normal)
         {
-            if (string.IsNullOrWhiteSpace(topic))
-            {
-                throw new ArgumentNullException(nameof(topic));
-            }
-
             if (retryLimit < 1)
             {
                 throw new ArgumentException($"{nameof(retryLimit)} cannot be less than 1", nameof(retryLimit));
@@ -73,7 +52,6 @@ namespace RedCapped.Core
                     AcknowledgedAt = DateTime.MinValue,
                     RetryLimit = retryLimit
                 },
-                Topic = topic
             };
 
             return await PublishAsyncInternal(msg);
@@ -90,10 +68,9 @@ namespace RedCapped.Core
             return message.MessageId;
         }
 
-        private async Task SubscribeInternal(string topic, Func<T, bool> handler)
+        private async Task SubscribeInternal(Func<T, bool> handler)
         {
-            var cancellationToken = new CancellationTokenSource();
-            _cancellationTokenList[topic] = cancellationToken;
+            _cancellationTokenSource = new CancellationTokenSource();
 
             try
             {
@@ -105,15 +82,14 @@ namespace RedCapped.Core
 
                 var builder = Builders<BsonDocument>.Filter;
                 var filter = builder.Eq("h.t", typeof (T).ToString())
-                             & builder.Eq("h.a", DateTime.MinValue)
-                             & builder.Eq("t", topic);
+                             & builder.Eq("h.a", DateTime.MinValue);
 
-                while (!cancellationToken.IsCancellationRequested)
+                while (!_cancellationTokenSource.IsCancellationRequested)
                 {
                     Subscribed = true;
 
                     using (var cursor = await
-                        _collection.FindAsync(filter, findOptions, cancellationToken.Token))
+                        _collection.FindAsync(filter, findOptions, _cancellationTokenSource.Token))
                     {
                         await cursor.ForEachAsync(async doc =>
                         {
@@ -140,10 +116,10 @@ namespace RedCapped.Core
                                 {
                                     await
                                         _errorCollection.WithWriteConcern(item.Header.QoS.ToWriteConcern())
-                                            .InsertOneAsync(item.ToBsonDocument(), cancellationToken.Token);
+                                            .InsertOneAsync(item.ToBsonDocument(), _cancellationTokenSource.Token);
                                 }
                             }
-                        }, cancellationToken.Token);
+                        }, _cancellationTokenSource.Token);
                     }
                 }
             }
