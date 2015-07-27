@@ -65,7 +65,7 @@ namespace RedCapped.Core
 
             if (retryLimit < 1)
             {
-                throw new ArgumentException("retryLimit cannot be less than 1", nameof(retryLimit));
+                throw new ArgumentException($"{nameof(retryLimit)} cannot be less than 1", nameof(retryLimit));
             }
 
             var msg = new Message<T>(message)

@@ -39,7 +39,7 @@ namespace RedCapped.Core
                 return null;
             }
 
-            var errorCollection = await _mongoContext.Value.GetCollectionAsync<BsonDocument>(string.Format("{0}_err", queueName), false);
+            var errorCollection = await _mongoContext.Value.GetCollectionAsync<BsonDocument>($"{queueName}_err", false);
             
             return new QueueOf<T>(collection, errorCollection);
         }
