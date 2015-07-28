@@ -8,9 +8,15 @@ namespace RedCapped.Core.Tests
     public class QueueOfTests
     {
         private IQueueOf<string> _sut;
-        private RedCappedQueueManager _manager;
+        private QueueFactory _manager;
 
         public QueueOfTests()
+        {
+            MongoDbUtils.DropDatabase();
+        }
+
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
         {
             MongoDbUtils.DropDatabase();
         }
@@ -18,7 +24,7 @@ namespace RedCapped.Core.Tests
         [SetUp]
         public void SetUp()
         {
-            _manager = new RedCappedQueueManager(MongoDbUtils.ConnectionString, MongoDbUtils.DatabaseName);
+            _manager = new QueueFactory(MongoDbUtils.ConnectionString, MongoDbUtils.DatabaseName);
             _sut = _manager.CreateQueueAsync<string>("testqueue", 4096).Result;
         }
 
@@ -26,7 +32,7 @@ namespace RedCapped.Core.Tests
         public async void PublishAsync_can_publish_a_message()
         {
             // WHEN
-            var actual = await _sut.PublishAsync("anytopic", "hi!");
+            var actual = await _sut.PublishAsync("hi!");
 
             // THEN
             Assert.That(actual, Is.Not.Null);
@@ -36,29 +42,16 @@ namespace RedCapped.Core.Tests
         public async void PublishAsync_can_publish_a_message_with_different_qos()
         {
             // WHEN
-            var actual = await _sut.PublishAsync("anytopic", "hi!", qos: QoS.High);
+            var actual = await _sut.PublishAsync("hi!", qos: QoS.High);
 
             // THEN
             Assert.That(actual, Is.Not.Null);
         }
 
         [Test]
-        public void PublishAsync_throws_when_no_topic()
-        {
-            Assert.Throws<ArgumentNullException>(async () => await _sut.PublishAsync("", "hi!"));
-        }
-
-        [Test]
         public void PublishAsync_throws_when_receive_limit_too_low()
         {
-            Assert.Throws<ArgumentException>(async () => await _sut.PublishAsync("anytopic", "hi!", 0));
-        }
-
-        [Test]
-        [ExpectedException(typeof(ArgumentNullException))]
-        public void Subscribe_throws_when_no_topic()
-        {
-            _sut.Subscribe("", m => true);
+            Assert.Throws<ArgumentException>(async () => await _sut.PublishAsync("hi!", 0));
         }
 
         [Test]
@@ -67,13 +60,11 @@ namespace RedCapped.Core.Tests
         {
             // GIVEN
             const string expected = "hi I'm a message!";
-
-            var id = await _sut.PublishAsync("anothertopic", expected);
-
-            string actual = null;
+            var id = await _sut.PublishAsync(expected);
 
             // WHEN
-            _sut.Subscribe("anothertopic", m =>
+            string actual = null;
+            _sut.Subscribe(m =>
             {
                 actual = m;
                 return true;
@@ -92,16 +83,9 @@ namespace RedCapped.Core.Tests
         [Test]
         public void Unsubscribe_can_be_safely_called_multiple_times()
         {
-            _sut.Unsubscribe("unexistent-topic");
-            _sut.Unsubscribe("unexistent-topic");
-            _sut.Unsubscribe("unexistent-topic");
-        }
-
-        [Test]
-        [ExpectedException(typeof(ArgumentNullException))]
-        public void Unsubscribe_throws_when_no_topic()
-        {
-            _sut.Unsubscribe("");
+            _sut.Unsubscribe();
+            _sut.Unsubscribe();
+            _sut.Unsubscribe();
         }
     }
 }

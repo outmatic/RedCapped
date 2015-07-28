@@ -1,18 +1,19 @@
 ﻿using System;
 using System.Threading.Tasks;
+using MongoDB.Bson;
 
 namespace RedCapped.Core
 {
-    public class RedCappedQueueManager
+    public class QueueFactory
     {
         private readonly Lazy<IMongoContext> _mongoContext;
 
-        protected RedCappedQueueManager(IMongoContext mongoContext)
+        protected QueueFactory(IMongoContext mongoContext)
         {
             _mongoContext = new Lazy<IMongoContext>(() => mongoContext);
         }
 
-        public RedCappedQueueManager(string connectionString, string dbName)
+        public QueueFactory(string connectionString, string dbName)
         {
             _mongoContext = new Lazy<IMongoContext>(() => new MongoContext(connectionString, dbName));
         }
@@ -31,10 +32,16 @@ namespace RedCapped.Core
 
         public async Task<IQueueOf<T>> GetQueueAsync<T>(string queueName) where T : class
         {
-            var queue = await _mongoContext.Value.GetCollectionAsync<T>(queueName);
-            var errorQueue = _mongoContext.Value.GetCollection(string.Format("{0}_err", queueName));
+            var collection = await _mongoContext.Value.GetCollectionAsync<BsonDocument>(queueName, true);
+
+            if (collection == null)
+            {
+                return null;
+            }
+
+            var errorCollection = await _mongoContext.Value.GetCollectionAsync<BsonDocument>($"{queueName}_err", false);
             
-            return queue != null ? new QueueOf<T>(queue, errorQueue) : null;
+            return new QueueOf<T>(collection, errorCollection);
         }
     }
 }
