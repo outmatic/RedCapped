@@ -10,11 +10,6 @@ namespace RedCapped.Core.Tests
         private IQueueOf<string> _sut;
         private QueueFactory _manager;
 
-        public QueueOfTests()
-        {
-            MongoDbUtils.DropDatabase();
-        }
-
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
@@ -24,6 +19,7 @@ namespace RedCapped.Core.Tests
         [SetUp]
         public void SetUp()
         {
+            MongoDbUtils.DropDatabase();
             _manager = new QueueFactory(MongoDbUtils.ConnectionString, MongoDbUtils.DatabaseName);
             _sut = _manager.CreateQueueAsync<string>("testqueue", 4096).Result;
         }
