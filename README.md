@@ -32,7 +32,7 @@ await queue.PublishAsync(new Order { Id = 123, Amount = 120M });
 var factory = new QueueFactory("mongodb://localhost", "mydb");
 // create the queue
 var queue = await factory.CreateQueue<Order>(queueName, 256*1024*1024);
-// subscribe the topic 'new-orders'
+// subscribe
 queue.Subscribe(order =>
 {
   Debug.WriteLine("Order #{0} amount {1}", order.Id, order.Amount);
