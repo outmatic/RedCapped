@@ -3,6 +3,8 @@ A lightweight .NET message queue system with QoS support, built on top of MongoD
 
 [![Build status](https://ci.appveyor.com/api/projects/status/34vnj5l5gdu6i3t4?svg=true)](https://ci.appveyor.com/project/petrhaus/redcapped)
 
+N.B. This is a work in progress and is subject to change, use it at your own risk!
+
 ### Define the message payload
 ```csharp
 public class Order
@@ -17,9 +19,9 @@ public class Order
 
 ```csharp
 // create the queues manager
-var manager = new QueueManager("mongodb://localhost", "mydb");
+var factory = new QueueFactory("mongodb://localhost", "mydb");
 // create the queue
-var queue = await manager.CreateQueue<Order>(queueName, 256*1024*1024);
+var queue = await factory.CreateQueue<Order>(queueName, 256*1024*1024);
 // publish!
 await queue.PublishAsync(new Order { Id = 123, Amount = 120M });
 ```
@@ -27,15 +29,14 @@ await queue.PublishAsync(new Order { Id = 123, Amount = 120M });
 
 ```csharp
 // create the queues manager
-var manager = new QueueManager("mongodb://localhost", "mydb");
+var factory = new QueueFactory("mongodb://localhost", "mydb");
 // create the queue
-var queue = await manager.CreateQueue<Order>(queueName, 256*1024*1024);
+var queue = await factory.CreateQueue<Order>(queueName, 256*1024*1024);
 // subscribe the topic 'new-orders'
 queue.Subscribe(order =>
 {
   Debug.WriteLine("Order #{0} amount {1}", order.Id, order.Amount);
-  // if the message was handled, otherwise it will be requeued
+  // return true if the message was handled, otherwise it will be requeued
   return true;
 });
 ```
-N.B. This is a work in progress and is subject to change, use it at your own risk!
