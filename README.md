@@ -17,7 +17,7 @@ public class Order
 
 ```csharp
 // create the queues manager
-var manager = new RedCappedQueueManager("mongodb://localhost", "mydb");
+var manager = new QueueManager("mongodb://localhost", "mydb");
 // create the queue
 var queue = await manager.CreateQueue<Order>(queueName, 256*1024*1024);
 // publish!
@@ -27,7 +27,7 @@ await queue.PublishAsync(new Order { Id = 123, Amount = 120M });
 
 ```csharp
 // create the queues manager
-var manager = new RedCappedQueueManager("mongodb://localhost", "mydb");
+var manager = new QueueManager("mongodb://localhost", "mydb");
 // create the queue
 var queue = await manager.CreateQueue<Order>(queueName, 256*1024*1024);
 // subscribe the topic 'new-orders'
