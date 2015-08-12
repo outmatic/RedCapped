@@ -8,7 +8,6 @@ namespace RedCapped.Core.Tests
         public FakeQueueFactory(IMongoContext mongoContext)
             : base(mongoContext)
         {
-
         }
     }
 
@@ -17,7 +16,6 @@ namespace RedCapped.Core.Tests
         public FakeQueueOf(IMongoCollection<BsonDocument> collection, IMongoCollection<BsonDocument> errorCollection)
             : base(collection, errorCollection)
         {
-
         }
     }
 }

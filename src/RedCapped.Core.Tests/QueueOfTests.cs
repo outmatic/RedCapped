@@ -4,9 +4,17 @@ using NUnit.Framework;
 
 namespace RedCapped.Core.Tests
 {
-    [TestFixture]
+    [TestFixture(Category = "Integration")]
     public class QueueOfTests
     {
+        [SetUp]
+        public void SetUp()
+        {
+            MongoDbUtils.DropDatabase();
+            _manager = new QueueFactory(MongoDbUtils.ConnectionString, MongoDbUtils.DatabaseName);
+            _sut = _manager.CreateQueueAsync<string>("testqueue", 4096).Result;
+        }
+
         private IQueueOf<string> _sut;
         private QueueFactory _manager;
 
@@ -14,14 +22,6 @@ namespace RedCapped.Core.Tests
         public void FixtureTearDown()
         {
             MongoDbUtils.DropDatabase();
-        }
-
-        [SetUp]
-        public void SetUp()
-        {
-            MongoDbUtils.DropDatabase();
-            _manager = new QueueFactory(MongoDbUtils.ConnectionString, MongoDbUtils.DatabaseName);
-            _sut = _manager.CreateQueueAsync<string>("testqueue", 4096).Result;
         }
 
         [Test]

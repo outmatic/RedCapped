@@ -6,7 +6,6 @@ namespace RedCapped.Core.Tests.Extensions
     {
         public static void IgnoreAwaitForNSubstituteAssertion(this Task task)
         {
-
         }
     }
 }

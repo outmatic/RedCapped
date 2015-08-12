@@ -11,9 +11,9 @@ namespace RedCapped.Core
 {
     public class QueueOf<T> : IQueueOf<T>
     {
-        private CancellationTokenSource _cancellationTokenSource;
         private readonly IMongoCollection<BsonDocument> _collection;
         private readonly IMongoCollection<BsonDocument> _errorCollection;
+        private CancellationTokenSource _cancellationTokenSource;
 
         protected internal QueueOf(IMongoCollection<BsonDocument> collection,
             IMongoCollection<BsonDocument> errorCollection)
@@ -50,7 +50,7 @@ namespace RedCapped.Core
                     SentAt = DateTime.Now,
                     AcknowledgedAt = DateTime.MinValue,
                     RetryLimit = retryLimit
-                },
+                }
             };
 
             return await PublishAsyncInternal(msg);
@@ -133,9 +133,9 @@ namespace RedCapped.Core
         private async Task<bool> AckAsync(Message<T> message)
         {
             var builder = Builders<BsonDocument>.Filter;
-            var filter = builder
-                .Eq("_id", ObjectId.Parse(message.MessageId))
+            var filter = builder.Eq("_id", ObjectId.Parse(message.MessageId))
                          & builder.Eq("h.a", DateTime.MinValue);
+
             var update = Builders<BsonDocument>.Update
                 .Set("h.a", DateTime.Now)
                 .Inc("h.c", 1);

@@ -14,20 +14,38 @@ namespace RedCapped.TestConsole
         {
             WriteLine("Starting tests:");
             WriteLine();
+            Console.WriteLine(DateTime.MinValue);
             Task.Run(() => MainAsync(args)).Wait();
+            WriteLine("Press any key to exit.");
             ReadKey();
         }
 
         static async void MainAsync(string[] args)
         {
             var m = new QueueFactory("mongodb://localhost", "redcappedtest");
-            var q = await m.CreateQueueAsync<string>("test", 64*1024*1024);
+            var q = await m.CreateQueueAsync<string>("test2", 64*1024*1024);
 
             await PublishMessages(q, QoS.Low, 10);
             await PublishMessages(q, QoS.Normal, 10);
             await PublishMessages(q, QoS.High, 10);
 
-            WriteLine("Press any key to exit.");
+            var counter = 0;
+
+            var watch = new Stopwatch();
+            watch.Start();
+
+            q.Subscribe(msg =>
+            {
+                counter++;
+
+                if (counter%1000 != 0) return true;
+
+                Console.SetCursorPosition(0, Console.CursorTop);
+                Console.Write("Receive rate (msg/s): {0}", Math.Truncate(decimal.Divide(1000, watch.ElapsedMilliseconds) * 1000));
+                watch.Restart();
+
+                return true;
+            });
         }
 
         private static async Task PublishMessages(IQueueOf<string> queue, QoS qos, int passes)
