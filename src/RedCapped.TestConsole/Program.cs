@@ -14,7 +14,7 @@ namespace RedCapped.TestConsole
         {
             WriteLine("Starting tests:");
             WriteLine();
-            Console.WriteLine(DateTime.MinValue);
+
             Task.Run(() => MainAsync(args)).Wait();
             WriteLine("Press any key to exit.");
             ReadKey();

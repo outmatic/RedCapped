@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>$id$</id>
+    <version>$version$</version>
+    <title>$title$</title>
+    <authors>Alessandro Petrelli</authors>
+    <owners>Alessandro Petrelli</owners>
+    <projectUrl>http://github.com/petrhaus/RedCapped</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>a lightweight .NET message queue system with QoS support, built on top of MongoDb.</description>
+    <releaseNotes>First release.</releaseNotes>
+    <copyright>Copyright 2015</copyright>
+    <tags>mongodb queue decoupling pubsub</tags>
+  </metadata>
+</package>
