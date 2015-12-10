@@ -26,7 +26,7 @@ namespace RedCapped.Core.Tests
         private IMongoCollection<BsonDocument> _collection;
 
         [Test]
-        public async void CreateQueueAsync_creates_a_new_queue_by_checking_if_it_exists()
+        public async Task CreateQueueAsync_creates_a_new_queue_by_checking_if_it_exists()
         {
             // GIVEN
             var expected = typeof (IQueueOf<string>);
@@ -45,7 +45,7 @@ namespace RedCapped.Core.Tests
         }
 
         [Test]
-        public async void CreateQueueAsync_returns_existing_queue_if_it_exists()
+        public async Task CreateQueueAsync_returns_existing_queue_if_it_exists()
         {
             // GIVEN
             var expected = typeof (IQueueOf<string>);
@@ -64,7 +64,7 @@ namespace RedCapped.Core.Tests
         }
 
         [Test]
-        public async void GetQueueAsync_returns_existent_queue()
+        public async Task GetQueueAsync_returns_existent_queue()
         {
             // GIVEN
             var expected = typeof (IQueueOf<string>);
@@ -79,7 +79,7 @@ namespace RedCapped.Core.Tests
         }
 
         [Test]
-        public async void GetQueueAsync_returns_null_for_unexistent_queue()
+        public async Task GetQueueAsync_returns_null_for_unexistent_queue()
         {
             // GIVEN
             _mongoContext.GetCollectionAsync<BsonDocument>("anyqueue", true)

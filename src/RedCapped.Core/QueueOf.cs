@@ -26,7 +26,7 @@ namespace RedCapped.Core
 
         public void Subscribe(Func<T, bool> handler)
         {
-            Task.Factory.StartNew((() => SubscribeInternal(handler)), TaskCreationOptions.LongRunning);
+            Task.Factory.StartNew(() => SubscribeInternal(handler), TaskCreationOptions.LongRunning);
         }
 
         public void Unsubscribe()
@@ -115,7 +115,7 @@ namespace RedCapped.Core
                                 {
                                     await
                                         _errorCollection.WithWriteConcern(item.Header.QoS.ToWriteConcern())
-                                            .InsertOneAsync(item.ToBsonDocument(), _cancellationTokenSource.Token);
+                                            .InsertOneAsync(item.ToBsonDocument(), null, _cancellationTokenSource.Token);
                                 }
                             }
                         }, _cancellationTokenSource.Token);
