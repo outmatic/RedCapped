@@ -45,11 +45,6 @@ namespace RedCapped.Core.Tests
             Assert.That(actual, Is.Not.Null);
         }
 
-        private async Task Publish(string msg, int retryLimit)
-        {
-            await _sut.PublishAsync(msg, retryLimit);
-        }
-
         [Test]
         public void PublishAsync_throws_when_receive_limit_too_low()
         {
