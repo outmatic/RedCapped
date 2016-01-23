@@ -40,8 +40,8 @@ namespace RedCapped.TestConsole
 
                 if (counter%1000 != 0) return true;
 
-                Console.SetCursorPosition(0, Console.CursorTop);
-                Console.Write("Receive rate (msg/s): {0}", Math.Truncate(decimal.Divide(1000, watch.ElapsedMilliseconds) * 1000));
+                SetCursorPosition(0, CursorTop);
+                Write("Receive rate (msg/s): {0}", Math.Truncate(decimal.Divide(1000, watch.ElapsedMilliseconds) * 1000));
                 watch.Restart();
 
                 return true;

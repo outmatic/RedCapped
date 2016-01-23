@@ -50,7 +50,7 @@ namespace RedCapped.Core.Tests
         [Ignore("void")]
         public void PublishAsync_throws_when_receive_limit_too_low()
         {
-            Assert.Throws<ArgumentException>(async () => await _sut.PublishAsync("hi!", 0));
+            Assert.Throws<AggregateException>(() => { _sut.PublishAsync("Hi!", 0).Wait(); });
         }
 
         [Test]
