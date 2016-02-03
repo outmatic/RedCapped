@@ -3,8 +3,6 @@ A lightweight .NET message queue system with QoS support, built on top of MongoD
 
 [![Build status](https://ci.appveyor.com/api/projects/status/34vnj5l5gdu6i3t4?svg=true)](https://ci.appveyor.com/project/petrhaus/redcapped)
 
-N.B. This is a work in progress and is subject to change, use it at your own risk!
-
 ### Define the message payload
 ```csharp
 public class Order
@@ -15,7 +13,7 @@ public class Order
 }
 ```
 
-### How to publish messages 
+### How to publish messages
 
 ```csharp
 // create the queues manager
