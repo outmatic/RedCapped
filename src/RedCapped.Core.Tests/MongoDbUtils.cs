@@ -4,7 +4,7 @@ namespace RedCapped.Core.Tests
 {
     public static class MongoDbUtils
     {
-        public const string ConnectionString = "mongodb://localhost";
+        public const string ConnectionString = "mongodb://localhost:27017";
         public const string DatabaseName = "redcappedtest";
 
         public static void DropDatabase()

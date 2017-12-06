@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
@@ -7,12 +6,18 @@ using MongoDB.Driver;
 
 namespace RedCapped.Core
 {
+    public interface IMongoContext
+    {
+        Task<bool> CollectionExistsAsync(string collectionName);
+        Task CreateCappedCollectionAsync(string collectionName, long maxSize);
+        Task<IMongoCollection<BsonDocument>> GetCollectionAsync<T>(string collectionName, bool checkExists);
+    }
+
     internal class MongoContext : IMongoContext
     {
         private const string Prefix = "red";
         private const int CollectionMaxSize = 4096;
-        private readonly Lazy<IMongoClient> _client;
-        private readonly Lazy<IMongoDatabase> _database;
+        private readonly IMongoDatabase _database;
         private readonly CancellationToken _cancellationToken;
 
         private static string CollectionFullName(string collectionName)
@@ -22,8 +27,8 @@ namespace RedCapped.Core
 
         public MongoContext(string connectionString, string dbName, CancellationToken cancellationToken = default(CancellationToken))
         {
-            _client = new Lazy<IMongoClient>(() => new MongoClient(connectionString));
-            _database = new Lazy<IMongoDatabase>(() => _client.Value.GetDatabase(dbName));
+            var client = new MongoClient(connectionString);
+            _database = client.GetDatabase(dbName);
 
             _cancellationToken = cancellationToken;
         }
@@ -35,7 +40,7 @@ namespace RedCapped.Core
                 Filter = new BsonDocument("name", CollectionFullName(collectionName))
             };
 
-            using (var cursor = await _database.Value.ListCollectionsAsync(options, _cancellationToken))
+            using (var cursor = await _database.ListCollectionsAsync(options, _cancellationToken))
             {
                 if (cursor == null)
                 {
@@ -55,9 +60,9 @@ namespace RedCapped.Core
                 MaxSize = maxSize > CollectionMaxSize ? maxSize : CollectionMaxSize
             };
 
-            await _database.Value.CreateCollectionAsync(CollectionFullName(collectionName), collectionOptions, _cancellationToken);
+            await _database.CreateCollectionAsync(CollectionFullName(collectionName), collectionOptions, _cancellationToken);
 
-            var collection = _database.Value.GetCollection<BsonDocument>(CollectionFullName(collectionName));
+            var collection = _database.GetCollection<BsonDocument>(CollectionFullName(collectionName));
 
             var indexOptions = new CreateIndexOptions
             {
@@ -75,7 +80,7 @@ namespace RedCapped.Core
         {
             if (!checkExists || await CollectionExistsAsync(collectionName))
             {
-                return _database.Value.GetCollection<BsonDocument>(CollectionFullName(collectionName));
+                return _database.GetCollection<BsonDocument>(CollectionFullName(collectionName));
             }
 
             return null;

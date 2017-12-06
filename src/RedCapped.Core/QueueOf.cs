@@ -9,6 +9,13 @@ using RedCapped.Core.Extensions;
 
 namespace RedCapped.Core
 {
+    public interface IQueueOf<T>
+    {
+        Task<string> PublishAsync(T message, int retryLimit = 3, QoS qos = QoS.Normal);
+        void Subscribe(Func<T, bool> handler);
+        void Unsubscribe();
+    }
+
     public class QueueOf<T> : IQueueOf<T>
     {
         private readonly IMongoCollection<BsonDocument> _collection;
@@ -22,7 +29,7 @@ namespace RedCapped.Core
             _errorCollection = errorCollection;
         }
 
-        public bool Subscribed { get; private set; }
+        private bool Subscribed { get; set; }
 
         public void Subscribe(Func<T, bool> handler)
         {
