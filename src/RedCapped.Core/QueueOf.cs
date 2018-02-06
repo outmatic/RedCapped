@@ -67,11 +67,27 @@ namespace RedCapped.Core
         {
             message.MessageId = ObjectId.GenerateNewId().ToString();
 
-            await
-                _collection.WithWriteConcern(message.Header.QoS.ToWriteConcern())
-                    .InsertOneAsync(message.ToBsonDocument());
+            await _collection
+                .WithWriteConcern(message.Header.QoS.ToWriteConcern())
+                .InsertOneAsync(message.ToBsonDocument());
 
             return message.MessageId;
+        }
+
+        private static FindOptions<BsonDocument> CreateAwaitableFindOptions()
+        {
+            return new FindOptions<BsonDocument>
+            {
+                CursorType = CursorType.TailableAwait,
+                NoCursorTimeout = true
+            };
+        }
+
+        private static FilterDefinition<BsonDocument> CreateSubscriptionFilter()
+        {
+            var builder = Builders<BsonDocument>.Filter;
+            return builder.Eq("h.t", typeof(T).ToString())
+                & builder.Eq("h.a", DateTime.MinValue);
         }
 
         private async Task SubscribeInternal(Func<T, bool> handler)
@@ -80,51 +96,18 @@ namespace RedCapped.Core
 
             try
             {
-                var findOptions = new FindOptions<BsonDocument>
-                {
-                    CursorType = CursorType.TailableAwait,
-                    NoCursorTimeout = true
-                };
-
-                var builder = Builders<BsonDocument>.Filter;
-                var filter = builder.Eq("h.t", typeof (T).ToString())
-                             & builder.Eq("h.a", DateTime.MinValue);
+                var findOptions = CreateAwaitableFindOptions();
+                var filter = CreateSubscriptionFilter();
 
                 while (!_cancellationTokenSource.IsCancellationRequested)
                 {
                     Subscribed = true;
 
-                    using (var cursor = await
-                        _collection.FindAsync(filter, findOptions, _cancellationTokenSource.Token))
+                    using (var cursor = await _collection.FindAsync(filter, findOptions, _cancellationTokenSource.Token))
                     {
                         await cursor.ForEachAsync(async doc =>
                         {
-                            Message<T> item = null;
-
-                            try
-                            {
-                                item = BsonSerializer.Deserialize<Message<T>>(doc);
-                            }
-                            catch (Exception)
-                            {
-                                Debug.WriteLine("Found an offending payload:\n{0}", item.ToJson());
-
-                                return;
-                            }
-
-                            if (await AckAsync(item) && !handler(item.Payload))
-                            {
-                                if (item.Header.RetryCount < item.Header.RetryLimit)
-                                {
-                                    await PublishAsyncInternal(item);
-                                }
-                                else
-                                {
-                                    await
-                                        _errorCollection.WithWriteConcern(item.Header.QoS.ToWriteConcern())
-                                            .InsertOneAsync(item.ToBsonDocument(), null, _cancellationTokenSource.Token);
-                                }
-                            }
+                            await HandleMessage(handler, doc);
                         }, _cancellationTokenSource.Token);
                     }
                 }
@@ -137,18 +120,49 @@ namespace RedCapped.Core
             }
         }
 
+        private async Task HandleMessage(Func<T, bool> handler, BsonDocument doc)
+        {
+            Message<T> item = null;
+
+            try
+            {
+                item = BsonSerializer.Deserialize<Message<T>>(doc);
+            }
+            catch (Exception)
+            {
+                Debug.WriteLine("Found an offending payload:\n{0}", item.ToJson());
+
+                return;
+            }
+
+            if (await AckAsync(item) && !handler(item.Payload))
+            {
+                if (item.Header.RetryCount < item.Header.RetryLimit)
+                {
+                    await PublishAsyncInternal(item);
+                }
+                else
+                {
+                    await _errorCollection
+                        .WithWriteConcern(item.Header.QoS.ToWriteConcern())
+                        .InsertOneAsync(item.ToBsonDocument(), cancellationToken: _cancellationTokenSource.Token);
+                }
+            }
+        }
+
         private async Task<bool> AckAsync(Message<T> message)
         {
             var builder = Builders<BsonDocument>.Filter;
             var filter = builder.Eq("_id", ObjectId.Parse(message.MessageId))
-                         & builder.Eq("h.a", DateTime.MinValue);
+                & builder.Eq("h.a", DateTime.MinValue);
 
             var update = Builders<BsonDocument>.Update
                 .Set("h.a", DateTime.Now)
                 .Inc("h.c", 1);
 
-            var result =
-                await _collection.WithWriteConcern(message.Header.QoS.ToWriteConcern()).UpdateOneAsync(filter, update);
+            var result = await _collection
+                .WithWriteConcern(message.Header.QoS.ToWriteConcern())
+                .UpdateOneAsync(filter, update);
 
             return result.MatchedCount == 1 && result.ModifiedCount == 1;
         }
